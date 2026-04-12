@@ -8,18 +8,20 @@ import { ChatInput } from "./chat-input";
 
 interface ChatInterfaceProps {
   threadId: string;
+  accessCode: string;
 }
 
-export function ChatInterface({ threadId }: ChatInterfaceProps) {
+export function ChatInterface({ threadId, accessCode }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
+        headers: { "x-access-code": accessCode },
         body: { threadId },
       }),
-    [threadId]
+    [threadId, accessCode]
   );
 
   const { messages, sendMessage, stop, status } = useChat({

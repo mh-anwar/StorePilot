@@ -7,7 +7,20 @@ import type { ModelMessage } from "ai";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const { messages, threadId: incomingThreadId } = (await req.json()) as {
+  // Verify access code if configured
+  const accessCode = process.env.ACCESS_CODE;
+  if (accessCode) {
+    const authHeader = req.headers.get("x-access-code");
+    if (authHeader !== accessCode) {
+      return new Response(JSON.stringify({ error: "Invalid access code" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  const body = await req.json();
+  const { messages, threadId: incomingThreadId } = body as {
     messages: ModelMessage[];
     threadId?: string;
   };
