@@ -9,9 +9,10 @@ import { Loader2 } from "lucide-react";
 interface MessageListProps {
   messages: UIMessage[];
   isLoading: boolean;
+  onSuggestionClick?: (text: string) => void;
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading, onSuggestionClick }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,12 +50,13 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
               "Write a description for product #5",
               "Create a summer sale campaign",
             ].map((prompt) => (
-              <div
+              <button
                 key={prompt}
-                className="bg-muted/50 rounded-lg p-2.5 text-left text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
+                onClick={() => onSuggestionClick?.(prompt)}
+                className="bg-muted/50 rounded-lg p-2.5 text-left text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors"
               >
                 {prompt}
-              </div>
+              </button>
             ))}
           </div>
         </div>

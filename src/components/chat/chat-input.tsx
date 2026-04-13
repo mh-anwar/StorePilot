@@ -66,7 +66,7 @@ export function ChatInput({
             type="submit"
             size="icon"
             disabled={!input.trim()}
-            className="h-[44px] w-[44px] rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700"
+            className="h-[44px] w-[44px] rounded-xl bg-violet-600 hover:bg-violet-500"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>

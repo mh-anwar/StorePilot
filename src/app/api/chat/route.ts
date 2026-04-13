@@ -1,65 +1,60 @@
 import { createOrchestratorStream } from "@/lib/agents/orchestrator";
+import { convertToModelMessages } from "ai";
 import { db } from "@/lib/db";
 import { threads, messages as messagesTable } from "@/lib/db/schema";
 import { nanoid } from "nanoid";
-import type { ModelMessage } from "ai";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  // Verify access code if configured
   const accessCode = process.env.ACCESS_CODE;
   if (accessCode) {
-    const authHeader = req.headers.get("x-access-code");
-    if (authHeader !== accessCode) {
-      return new Response(JSON.stringify({ error: "Invalid access code" }), {
+    const code = req.headers.get("x-access-code");
+    if (code !== accessCode) {
+      return new Response('{"error":"Unauthorized"}', {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
   }
 
-  const body = await req.json();
-  const { messages, threadId: incomingThreadId } = body as {
-    messages: ModelMessage[];
-    threadId?: string;
-  };
-
-  const threadId = incomingThreadId ?? nanoid();
-
-  if (!incomingThreadId) {
-    const firstMsg = messages[0];
-    const title =
-      typeof firstMsg?.content === "string"
-        ? firstMsg.content.slice(0, 100)
-        : "New conversation";
-    await db.insert(threads).values({ id: threadId, title });
+  const body = await req.json().catch(() => null);
+  if (!body?.messages?.length) {
+    return new Response('{"error":"messages required"}', {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  const lastMessage = messages[messages.length - 1];
-  await db.insert(messagesTable).values({
-    id: nanoid(),
-    threadId,
-    role: lastMessage.role as "user" | "assistant" | "system" | "tool",
-    content:
-      typeof lastMessage.content === "string"
-        ? lastMessage.content
-        : JSON.stringify(lastMessage.content),
-  });
+  const { threadId: tid } = body;
+  const threadId = tid ?? nanoid();
 
-  const result = createOrchestratorStream(messages);
+  // convert UIMessages -> ModelMessages for streamText
+  const modelMessages = await convertToModelMessages(body.messages);
 
-  // Persist assistant response after stream completes (fire-and-forget)
-  void Promise.resolve(result.text).then(async (text) => {
-    if (text) {
+  if (!tid) {
+    const first = body.messages[0];
+    const title = first?.parts?.find((p: { type: string }) => p.type === "text")?.text?.slice(0, 100) || "New conversation";
+    try {
+      await db.insert(threads).values({ id: threadId, title });
+    } catch { /* thread might exist */ }
+  }
+
+  // save user msg
+  const last = body.messages[body.messages.length - 1];
+  if (last?.role === "user") {
+    const text = last.parts?.find((p: { type: string }) => p.type === "text")?.text || "";
+    try {
       await db.insert(messagesTable).values({
         id: nanoid(),
         threadId,
-        role: "assistant",
+        role: "user",
         content: text,
       });
-    }
-  }).catch(() => {});
+    } catch { /* non-critical */ }
+  }
+
+  const result = createOrchestratorStream(modelMessages);
 
   return result.toUIMessageStreamResponse({
     headers: { "X-Thread-Id": threadId },

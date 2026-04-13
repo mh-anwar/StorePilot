@@ -41,9 +41,17 @@ export function ChatInterface({ threadId, accessCode }: ChatInterfaceProps) {
     [input, isLoading, sendMessage]
   );
 
+  const handleSuggestion = useCallback(
+    async (text: string) => {
+      if (isLoading) return;
+      await sendMessage({ text });
+    },
+    [isLoading, sendMessage]
+  );
+
   return (
     <div className="flex flex-col h-full">
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList messages={messages} isLoading={isLoading} onSuggestionClick={handleSuggestion} />
       <ChatInput
         input={input}
         setInput={setInput}

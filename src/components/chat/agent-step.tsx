@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   BarChart3,
   FileText,
@@ -12,88 +11,39 @@ import {
   Workflow,
 } from "lucide-react";
 
-const AGENT_CONFIG: Record<
-  string,
-  { icon: typeof Bot; color: string; bg: string; label: string }
-> = {
-  analytics: {
-    icon: BarChart3,
-    color: "text-blue-400",
-    bg: "bg-blue-500/10 border-blue-500/20",
-    label: "Analytics Agent",
-  },
-  content: {
-    icon: FileText,
-    color: "text-purple-400",
-    bg: "bg-purple-500/10 border-purple-500/20",
-    label: "Content Agent",
-  },
-  inventory: {
-    icon: Package,
-    color: "text-amber-400",
-    bg: "bg-amber-500/10 border-amber-500/20",
-    label: "Inventory Agent",
-  },
-  marketing: {
-    icon: Megaphone,
-    color: "text-green-400",
-    bg: "bg-green-500/10 border-green-500/20",
-    label: "Marketing Agent",
-  },
-  plan: {
-    icon: Workflow,
-    color: "text-cyan-400",
-    bg: "bg-cyan-500/10 border-cyan-500/20",
-    label: "Workflow Planner",
-  },
+const agents: Record<string, { icon: typeof Bot; color: string; bg: string; label: string }> = {
+  analytics: { icon: BarChart3, color: "text-blue-400", bg: "bg-blue-950/40 border-blue-800/30", label: "Analytics" },
+  content: { icon: FileText, color: "text-purple-400", bg: "bg-purple-950/40 border-purple-800/30", label: "Content" },
+  inventory: { icon: Package, color: "text-amber-400", bg: "bg-amber-950/40 border-amber-800/30", label: "Inventory" },
+  marketing: { icon: Megaphone, color: "text-emerald-400", bg: "bg-emerald-950/40 border-emerald-800/30", label: "Marketing" },
+  plan: { icon: Workflow, color: "text-cyan-400", bg: "bg-cyan-950/40 border-cyan-800/30", label: "Planner" },
 };
 
-interface AgentStepProps {
+export function AgentStep({ agentName, toolName, state, args }: {
   agentName: string;
   toolName: string;
   state: string;
   args: Record<string, unknown>;
-}
-
-export function AgentStep({ agentName, toolName, state, args }: AgentStepProps) {
-  const config = AGENT_CONFIG[agentName] ?? {
-    icon: Bot,
-    color: "text-gray-400",
-    bg: "bg-gray-500/10 border-gray-500/20",
-    label: agentName,
-  };
-  const Icon = config.icon;
-  const isLoading = state !== "result";
+}) {
+  const cfg = agents[agentName] ?? { icon: Bot, color: "text-gray-400", bg: "bg-gray-900/40 border-gray-700/30", label: agentName };
+  const Icon = cfg.icon;
+  const done = state === "result" || state === "output";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`rounded-lg border p-3 ${config.bg}`}
-    >
+    <div className={`rounded-md border p-2.5 ${cfg.bg}`}>
       <div className="flex items-center gap-2">
-        <Icon className={`h-4 w-4 ${config.color}`} />
-        <span className={`font-medium text-sm ${config.color}`}>
-          {config.label}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {toolName.replace(/_/g, " ")}
-        </span>
-        {isLoading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto text-muted-foreground" />
-        ) : (
-          <CheckCircle2 className="h-3.5 w-3.5 ml-auto text-emerald-400" />
-        )}
+        <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
+        <span className={`font-medium text-xs ${cfg.color}`}>{cfg.label}</span>
+        <span className="text-[11px] text-muted-foreground">{toolName.replace(/_/g, " ")}</span>
+        {done
+          ? <CheckCircle2 className="h-3 w-3 ml-auto text-emerald-500" />
+          : <Loader2 className="h-3 w-3 animate-spin ml-auto text-muted-foreground/60" />}
       </div>
       {state === "partial-call" && Object.keys(args).length > 0 && (
-        <motion.pre
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 0.6 }}
-          className="text-xs mt-2 font-mono overflow-hidden text-muted-foreground"
-        >
+        <pre className="text-[10px] mt-1.5 font-mono opacity-50 overflow-hidden text-muted-foreground leading-tight">
           {JSON.stringify(args, null, 2)}
-        </motion.pre>
+        </pre>
       )}
-    </motion.div>
+    </div>
   );
 }
