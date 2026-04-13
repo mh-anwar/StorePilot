@@ -7,8 +7,11 @@ import { nanoid } from "nanoid";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const userApiKey = req.headers.get("x-anthropic-key") || undefined;
+  const userModel = req.headers.get("x-model") || undefined;
   const accessCode = process.env.ACCESS_CODE;
-  if (accessCode) {
+  // If the caller brings their own API key, no access code is needed.
+  if (accessCode && !userApiKey) {
     const code = req.headers.get("x-access-code");
     if (code !== accessCode) {
       return new Response('{"error":"Unauthorized"}', {
@@ -54,7 +57,10 @@ export async function POST(req: Request) {
     } catch { /* non-critical */ }
   }
 
-  const result = createOrchestratorStream(modelMessages);
+  const result = createOrchestratorStream(modelMessages, {
+    apiKey: userApiKey,
+    model: userModel,
+  });
 
   return result.toUIMessageStreamResponse({
     headers: { "X-Thread-Id": threadId },

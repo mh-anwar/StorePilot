@@ -1,5 +1,5 @@
 import { streamText, tool, stepCountIs, type ToolSet } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { getAllAgentDescriptions, agents } from "./registry";
 import { AGENT_MODEL, MAX_AGENT_STEPS } from "../constants";
@@ -76,11 +76,17 @@ Tools are available directly — call them by their full name (e.g., \`analytics
 - If a request is ambiguous, ask for clarification rather than guessing
 - When multiple agents' tools are relevant, coordinate them for a comprehensive answer`;
 
-export function createOrchestratorStream(messages: ModelMessage[]) {
+export function createOrchestratorStream(
+  messages: ModelMessage[],
+  options?: { apiKey?: string; model?: string }
+) {
   const tools = buildToolMap();
+  const provider = options?.apiKey
+    ? createAnthropic({ apiKey: options.apiKey })
+    : anthropic;
 
   return streamText({
-    model: anthropic(AGENT_MODEL),
+    model: provider(options?.model || AGENT_MODEL),
     system: SUPERVISOR_SYSTEM,
     messages,
     tools,
