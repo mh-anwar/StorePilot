@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
 
@@ -13,15 +13,26 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ threadId, accessCode }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
+  const [userKey, setUserKey] = useState<string | null>(null);
+  const [userModel, setUserModel] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUserKey(localStorage.getItem("sp_user_key"));
+    setUserModel(localStorage.getItem("sp_user_model"));
+  }, []);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
-        headers: { "x-access-code": accessCode },
+        headers: {
+          "x-access-code": accessCode,
+          ...(userKey ? { "x-anthropic-key": userKey } : {}),
+          ...(userModel ? { "x-model": userModel } : {}),
+        },
         body: { threadId },
       }),
-    [threadId, accessCode]
+    [threadId, accessCode, userKey, userModel]
   );
 
   const { messages, sendMessage, stop, status } = useChat({
