@@ -48,10 +48,10 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="group rounded-xl border border-border bg-card overflow-hidden flex flex-col"
+      className="group bg-white border border-[#1a1a1a]/10 overflow-hidden flex flex-col"
     >
       <Link href={`/shop/${product.slug}`} className="block">
-        <div className="aspect-square bg-gradient-to-br from-violet-500/10 via-transparent to-cyan-500/10 relative overflow-hidden">
+        <div className="aspect-square bg-[#f0ece5] relative overflow-hidden">
           {product.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -65,18 +65,18 @@ export function ProductCard({ product }: { product: Product }) {
             </div>
           )}
           {onSale && (
-            <span className="absolute top-2 left-2 px-2 py-1 rounded-md bg-red-500 text-white text-[10px] font-semibold">
-              SALE
+            <span className="absolute top-3 left-3 px-2 py-0.5 bg-[#b54a23] text-white text-[10px] font-mono uppercase tracking-wider">
+              Sale
             </span>
           )}
           <span
             data-live-stock={product.id}
-            className={`absolute top-2 right-2 px-2 py-1 rounded-md text-[10px] font-medium ${
+            className={`absolute top-3 right-3 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider ${
               product.stock <= 0
-                ? "bg-gray-500 text-white"
+                ? "bg-[#1a1a1a] text-white"
                 : product.stock <= 5
-                  ? "bg-amber-500 text-white"
-                  : "bg-emerald-500/90 text-white"
+                  ? "bg-[#b54a23] text-white"
+                  : "bg-white/90 text-[#1a1a1a]"
             }`}
           >
             {product.stock <= 0
@@ -87,16 +87,19 @@ export function ProductCard({ product }: { product: Product }) {
           </span>
         </div>
       </Link>
-      <div className="p-3 flex-1 flex flex-col">
+      <div className="p-4 flex-1 flex flex-col">
         <Link href={`/shop/${product.slug}`}>
-          <h3 className="font-medium text-sm line-clamp-1 group-hover:text-violet-400 transition-colors">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#1a1a1a]/50">
+            {product.category}
+          </p>
+          <h3 className="font-serif text-lg leading-tight mt-0.5 line-clamp-1">
             {product.name}
           </h3>
         </Link>
         <div className="mt-1 flex items-baseline gap-2">
-          <span className="font-semibold">${price.toFixed(2)}</span>
+          <span className="font-medium">${price.toFixed(2)}</span>
           {onSale && (
-            <span className="text-xs text-muted-foreground line-through">
+            <span className="text-xs text-[#1a1a1a]/50 line-through">
               ${compare!.toFixed(2)}
             </span>
           )}
@@ -104,7 +107,7 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           onClick={addToCart}
           disabled={isPending || product.stock <= 0}
-          className="mt-3 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg bg-foreground text-background disabled:opacity-50 hover:opacity-90 transition"
+          className="mt-3 flex items-center justify-center gap-2 text-xs uppercase tracking-wider font-mono py-2.5 bg-[#1a1a1a] text-[#faf7f2] disabled:opacity-40 hover:bg-[#b54a23] transition-colors"
         >
           {isPending ? (
             <Loader2 className="h-3 w-3 animate-spin" />

@@ -34,14 +34,17 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
     .limit(48);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="mb-10 flex items-end justify-between gap-4 flex-wrap border-b border-[#1a1a1a]/10 pb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {category || "All products"}
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#1a1a1a]/60">
+            {q ? `search: "${q}"` : "shop"}
+          </p>
+          <h1 className="font-serif text-4xl md:text-5xl tracking-tight mt-2">
+            {category || "Everything"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {rows.length} items · live stock updates
+          <p className="text-sm text-[#1a1a1a]/60 mt-2">
+            {rows.length} items · stock updates live as shoppers check out
           </p>
         </div>
         <form className="flex gap-2">
@@ -49,21 +52,21 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
           <input
             name="q"
             defaultValue={q ?? ""}
-            placeholder="Search products"
-            className="px-3 py-2 rounded-lg bg-muted text-sm w-56 border border-border"
+            placeholder="Search"
+            className="px-3 py-2 rounded-full bg-white border border-[#1a1a1a]/20 text-sm w-56"
           />
           <select
             name="sort"
             defaultValue={sort ?? "new"}
-            className="px-3 py-2 rounded-lg bg-muted text-sm border border-border"
+            className="px-3 py-2 rounded-full bg-white border border-[#1a1a1a]/20 text-sm"
           >
             <option value="new">Newest</option>
-            <option value="price_asc">Price: low to high</option>
-            <option value="price_desc">Price: high to low</option>
+            <option value="price_asc">Price ↑</option>
+            <option value="price_desc">Price ↓</option>
           </select>
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm"
+            className="px-4 py-2 rounded-full bg-[#1a1a1a] text-[#faf7f2] text-sm"
           >
             Apply
           </button>

@@ -1,383 +1,191 @@
 import Link from "next/link";
-import {
-  BarChart3,
-  FileText,
-  Package,
-  Megaphone,
-  Zap,
-  ArrowRight,
-  MessageSquare,
-  LayoutDashboard,
-  Bot,
-  Database,
-  Workflow,
-  Shield,
-  Globe,
-  Sparkles,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, Store, Terminal, Workflow } from "lucide-react";
 
-const agents = [
-  {
-    name: "Analytics Agent",
-    description:
-      "Revenue trends, top products, customer segments, traffic sources, and anomaly detection.",
-    tools: [
-      "query_revenue",
-      "top_products",
-      "revenue_over_time",
-      "detect_anomalies",
-      "customer_segments",
-      "traffic_sources",
-      "sales_by_category",
-    ],
-    icon: BarChart3,
-    color: "from-blue-500 to-blue-600",
-    borderColor: "hover:border-blue-500/40",
-    bgGlow: "group-hover:bg-blue-500/5",
-  },
-  {
-    name: "Content Agent",
-    description:
-      "Product descriptions, SEO optimization, pricing analysis, and bulk listing improvements.",
-    tools: [
-      "generate_description",
-      "optimize_seo",
-      "bulk_improve_listings",
-      "suggest_pricing",
-    ],
-    icon: FileText,
-    color: "from-purple-500 to-purple-600",
-    borderColor: "hover:border-purple-500/40",
-    bgGlow: "group-hover:bg-purple-500/5",
-  },
-  {
-    name: "Inventory Agent",
-    description:
-      "Stock monitoring, restock recommendations, demand forecasting, and inventory updates.",
-    tools: [
-      "check_stock_levels",
-      "restock_recommendations",
-      "update_stock",
-      "forecast_demand",
-    ],
-    icon: Package,
-    color: "from-amber-500 to-amber-600",
-    borderColor: "hover:border-amber-500/40",
-    bgGlow: "group-hover:bg-amber-500/5",
-  },
-  {
-    name: "Marketing Agent",
-    description:
-      "Campaign planning, email copywriting, social media content, and discount strategies.",
-    tools: [
-      "generate_campaign",
-      "write_email_copy",
-      "discount_strategy",
-      "social_media_posts",
-    ],
-    icon: Megaphone,
-    color: "from-green-500 to-green-600",
-    borderColor: "hover:border-green-500/40",
-    bgGlow: "group-hover:bg-green-500/5",
-  },
+const asks = [
+  { text: "which SKUs are three weeks from running out?", who: "inventory" },
+  { text: "rewrite the descriptions for anything under 4 stars.", who: "content" },
+  { text: "why did Tuesday's revenue tank?", who: "analytics" },
+  { text: "draft a promo for the slow-moving beauty line.", who: "marketing" },
 ];
 
-const architecture = [
-  {
-    icon: Bot,
-    title: "Supervisor Orchestrator",
-    description:
-      "A central agent routes requests to specialized sub-agents using a flat tool map — no nested LLM calls.",
-  },
-  {
-    icon: Database,
-    title: "Real Database Queries",
-    description:
-      "Every tool queries a live Postgres database with 1,200+ orders, 200 customers, and 15k analytics events.",
-  },
-  {
-    icon: Workflow,
-    title: "Multi-Step Reasoning",
-    description:
-      "Complex requests are broken into workflows — the orchestrator plans, then executes each step sequentially.",
-  },
-  {
-    icon: Sparkles,
-    title: "Streaming Tool Calls",
-    description:
-      "Watch agents think in real-time — tool calls stream with animated step indicators and rich result cards.",
-  },
-];
-
-const exampleQueries = [
-  "What were my top 5 products by revenue this month?",
-  "Which items are about to go out of stock?",
-  "Write a product description for the merino wool cardigan",
-  "Create a spring sale campaign for my apparel category",
-  "Show me customer segments by spend tier",
-  "Detect any anomalies in my daily revenue",
+const reel = [
+  { k: "48", v: "products seeded" },
+  { k: "200", v: "customers" },
+  { k: "1.2k", v: "orders" },
+  { k: "15k+", v: "events" },
 ];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
-              <Zap className="h-3.5 w-3.5 text-white" />
-            </div>
-            <span className="font-bold">StorePilot</span>
+    <div className="min-h-screen bg-[#faf7f2] text-[#1a1a1a]">
+      {/* Top strip */}
+      <div className="border-b border-[#1a1a1a]/10">
+        <div className="max-w-6xl mx-auto px-6 py-2 flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-[#1a1a1a]/70">
+          <span>storepilot · an experiment in agentic retail</span>
+          <span className="hidden sm:inline">v0.4 · april 2026</span>
+        </div>
+      </div>
+
+      <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full bg-[#1a1a1a] flex items-center justify-center">
+            <span className="text-[#faf7f2] font-serif italic text-sm">s</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/chat">
-              <Button size="sm" className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700">
-                Open Chat
-              </Button>
-            </Link>
-          </div>
+          <span className="font-serif text-lg tracking-tight">StorePilot</span>
+        </div>
+        <div className="flex items-center gap-5 text-sm">
+          <Link href="/shop" className="hover:underline underline-offset-4">
+            Shop the demo
+          </Link>
+          <Link href="/dashboard" className="hover:underline underline-offset-4">
+            Dashboard
+          </Link>
+          <Link
+            href="/chat"
+            className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-[#faf7f2] px-4 py-2 rounded-full hover:bg-[#1a1a1a]/90"
+          >
+            Open chat
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent" />
-        <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-400 rounded-full px-3.5 py-1 text-sm font-medium mb-8 border border-violet-500/20">
-            <Bot className="h-3.5 w-3.5" />
-            Multi-Agent System
-          </div>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-5 leading-[1.1]">
-            AI agents that actually
-            <br />
-            <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              run your store
-            </span>
+      {/* Hero — editorial, not a card grid */}
+      <section className="max-w-6xl mx-auto px-6 pt-16 pb-24 grid grid-cols-12 gap-6 items-end">
+        <div className="col-span-12 lg:col-span-8">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#1a1a1a]/60 mb-6">
+            001 — the premise
+          </p>
+          <h1 className="font-serif tracking-tight leading-[0.95] text-5xl sm:text-6xl md:text-7xl">
+            A shopkeeper&rsquo;s copilot.{" "}
+            <span className="italic font-normal text-[#b54a23]">
+              Not a chatbot,
+            </span>{" "}
+            not a dashboard. Something in between.
           </h1>
-          <p className="text-base text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-            Four specialized agents with real database access. Ask about revenue,
-            generate product copy, check inventory, plan campaigns — they query
-            actual data and give you real answers.
+          <p className="mt-8 text-lg text-[#1a1a1a]/75 max-w-xl leading-relaxed">
+            Run a storefront, watch its agents work: analytics that notices the
+            Tuesday dip, inventory that knows which SKU is three weeks from
+            empty, marketing that drafts the promo anyway.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/chat">
-              <Button
-                size="lg"
-                className="h-11 px-7 bg-violet-600 hover:bg-violet-700 gap-2 shadow-lg shadow-violet-600/20"
-              >
-                <MessageSquare className="h-5 w-5" />
-                Try the AI Chat
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 bg-[#1a1a1a] text-[#faf7f2] px-5 py-3 rounded-full font-medium"
+            >
+              <Store className="h-4 w-4" />
+              Browse the demo shop
             </Link>
-            <Link href="/dashboard">
-              <Button size="lg" variant="outline" className="h-11 px-7 gap-2">
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Button>
+            <Link
+              href="/chat"
+              className="inline-flex items-center gap-2 border border-[#1a1a1a] px-5 py-3 rounded-full font-medium hover:bg-[#1a1a1a] hover:text-[#faf7f2]"
+            >
+              <Terminal className="h-4 w-4" />
+              Try the agents
             </Link>
           </div>
         </div>
-      </div>
-
-      {/* Example Queries */}
-      <div className="border-y border-border/50 bg-muted/20">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest text-center mb-6">
-            Things you can ask
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {exampleQueries.map((query) => (
-              <Link key={query} href="/chat">
-                <span className="inline-block bg-background border border-border/60 rounded-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:border-violet-500/30 transition-colors cursor-pointer">
-                  &ldquo;{query}&rdquo;
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Agent Cards */}
-      <div className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl font-bold mb-2">The Agents</h2>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Each one has its own system prompt, typed tools, and domain knowledge.
-            The orchestrator picks who handles what.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {agents.map((agent) => {
-            const Icon = agent.icon;
-            return (
-              <div
-                key={agent.name}
-                className={`group border border-border rounded-2xl p-6 transition-all duration-300 ${agent.borderColor}`}
-              >
-                <div className={`rounded-2xl transition-colors ${agent.bgGlow} p-0`}>
-                  <div className="flex items-start gap-4 mb-4">
-                    <div
-                      className={`w-11 h-11 rounded-xl bg-gradient-to-br ${agent.color} flex items-center justify-center flex-shrink-0 shadow-lg`}
-                    >
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{agent.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {agent.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 ml-15">
-                    {agent.tools.map((tool) => (
-                      <span
-                        key={tool}
-                        className="text-xs font-mono bg-muted/60 text-muted-foreground rounded px-2 py-0.5"
-                      >
-                        {tool}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Architecture */}
-      <div className="border-t border-border/50 bg-muted/10">
-        <div className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold mb-2">Architecture</h2>
-            <p className="text-sm text-muted-foreground">
-              How the pieces fit together.
+        <aside className="col-span-12 lg:col-span-4 lg:pb-4">
+          <div className="relative border border-[#1a1a1a]/15 bg-white p-5 rounded-sm shadow-[6px_6px_0_#1a1a1a]/5">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/60">
+              things merchants ask
             </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {architecture.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="text-center">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/10 to-cyan-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
-                    <Icon className="h-5 w-5 text-violet-400" />
-                  </div>
-                  <h3 className="font-semibold mb-2">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Tech Stack */}
-      <div className="border-t border-border/50">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            <div className="lg:w-1/3">
-              <h2 className="text-2xl font-bold mb-2">Stack</h2>
-              <p className="text-sm text-muted-foreground">
-                Serverless-first. Neon for zero cold-start DB,
-                Vercel AI SDK for streaming, server components
-                where it makes sense.
-              </p>
-            </div>
-            <div className="lg:w-2/3 flex flex-wrap gap-3">
-              {[
-                { name: "Next.js 15", category: "framework" },
-                { name: "TypeScript", category: "language" },
-                { name: "Vercel AI SDK v6", category: "ai" },
-                { name: "Claude Sonnet", category: "ai" },
-                { name: "Drizzle ORM", category: "database" },
-                { name: "Neon Postgres", category: "database" },
-                { name: "Tailwind CSS v4", category: "ui" },
-                { name: "shadcn/ui", category: "ui" },
-                { name: "Framer Motion", category: "ui" },
-                { name: "Recharts", category: "ui" },
-                { name: "Zod", category: "validation" },
-              ].map((tech) => (
-                <span
-                  key={tech.name}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium border ${
-                    tech.category === "ai"
-                      ? "bg-violet-500/10 border-violet-500/20 text-violet-300"
-                      : tech.category === "database"
-                        ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-300"
-                        : tech.category === "framework" || tech.category === "language"
-                          ? "bg-foreground/5 border-foreground/10 text-foreground"
-                          : "bg-muted border-border text-muted-foreground"
-                  }`}
-                >
-                  {tech.name}
-                </span>
+            <ul className="mt-4 space-y-3 text-sm leading-relaxed">
+              {asks.map((a) => (
+                <li key={a.text} className="flex gap-2">
+                  <span className="text-[#b54a23] font-mono">›</span>
+                  <span>
+                    {a.text}{" "}
+                    <span className="text-[10px] font-mono uppercase text-[#1a1a1a]/50 ml-1">
+                      [{a.who}]
+                    </span>
+                  </span>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
+        </aside>
+      </section>
+
+      {/* Numbers strip */}
+      <section className="border-y border-[#1a1a1a]/10 bg-white">
+        <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {reel.map((r) => (
+            <div key={r.v} className="flex items-baseline gap-3">
+              <span className="font-serif text-4xl">{r.k}</span>
+              <span className="text-xs uppercase tracking-wider text-[#1a1a1a]/60">
+                {r.v}
+              </span>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
+
+      {/* What's in the box */}
+      <section className="max-w-6xl mx-auto px-6 py-20 grid grid-cols-12 gap-10">
+        <div className="col-span-12 md:col-span-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#1a1a1a]/60">
+            002 — what&rsquo;s inside
+          </p>
+          <h2 className="font-serif text-4xl leading-tight mt-4">
+            The whole thing, wired end to end.
+          </h2>
+        </div>
+        <div className="col-span-12 md:col-span-8 grid sm:grid-cols-2 gap-x-10 gap-y-8 text-[15px] leading-relaxed">
+          {[
+            ["Public storefront", "Browse, search, cart, checkout — real orders hit the database."],
+            ["Live stock", "SSE pushes stock changes to shoppers as they happen."],
+            ["Admin desk", "Products, orders, customers, discounts, collections, reviews."],
+            ["AI chat", "Four agents with real Postgres tools, supervised by a planner."],
+            ["Automations", "Natural-language jobs that run agents on schedule or on demand."],
+            ["Bring your own key", "Drop in an Anthropic key in settings — nothing leaves the browser."],
+          ].map(([title, body]) => (
+            <div key={title}>
+              <h3 className="font-serif text-xl">{title}</h3>
+              <p className="text-[#1a1a1a]/70 mt-1">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* CTA */}
-      <div className="border-t border-border/50">
-        <div className="max-w-6xl mx-auto px-6 py-20 text-center">
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold mb-3">
-              Try it out
-            </h2>
-            <p className="text-sm text-muted-foreground mb-8">
-              Dashboard is open to browse. Chat needs an access code.
+      <section className="bg-[#1a1a1a] text-[#faf7f2]">
+        <div className="max-w-6xl mx-auto px-6 py-20 flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#faf7f2]/60">
+              003 — have a look
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/chat">
-                <Button
-                  size="lg"
-                  className="h-11 px-6 bg-violet-600 hover:bg-violet-700 gap-2"
-                >
-                  <MessageSquare className="h-5 w-5" />
-                  Open AI Chat
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button size="lg" variant="outline" className="h-11 px-6 gap-2">
-                  Dashboard
-                </Button>
-              </Link>
-            </div>
+            <h2 className="font-serif text-5xl leading-tight mt-3 max-w-xl">
+              Walk through the shop, then ask an agent what&rsquo;s going on.
+            </h2>
+          </div>
+          <div className="flex gap-3">
+            <Link
+              href="/shop"
+              className="px-5 py-3 rounded-full bg-[#faf7f2] text-[#1a1a1a] font-medium"
+            >
+              Shop
+            </Link>
+            <Link
+              href="/dashboard"
+              className="px-5 py-3 rounded-full border border-[#faf7f2] font-medium"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/dashboard/automations"
+              className="px-5 py-3 rounded-full border border-[#faf7f2] font-medium inline-flex items-center gap-2"
+            >
+              <Workflow className="h-4 w-4" /> Automations
+            </Link>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Footer */}
-      <div className="border-t border-border/50 bg-muted/10">
-        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
-              <Zap className="h-3 w-3 text-white" />
-            </div>
-            StorePilot
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <Shield className="h-3.5 w-3.5" />
-              Access-code protected
-            </span>
-            <span className="flex items-center gap-1">
-              <Globe className="h-3.5 w-3.5" />
-              Deployed on Vercel
-            </span>
-          </div>
-        </div>
-      </div>
+      <footer className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-xs font-mono uppercase tracking-wider text-[#1a1a1a]/60">
+        <span>© storepilot — a demo, not a product</span>
+        <span>neon · next · claude</span>
+      </footer>
     </div>
   );
 }
