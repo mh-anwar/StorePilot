@@ -34,7 +34,13 @@ const navItems = [
   { href: "/shop", label: "View Storefront", icon: Store },
 ];
 
-export function SidebarNav() {
+export function SidebarNav({
+  user,
+  org,
+}: {
+  user?: { name: string | null; email: string } | null;
+  org?: { id: string; name: string } | null;
+}) {
   const pathname = usePathname();
 
   return (
@@ -73,12 +79,31 @@ export function SidebarNav() {
         })}
       </nav>
       <div className="p-3 border-t border-border">
-        <div className="bg-muted/50 rounded-lg p-3">
-          <p className="text-xs font-medium">StorePilot Demo</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            AI-powered commerce
-          </p>
-        </div>
+        {user ? (
+          <div className="bg-muted/50 rounded-lg p-3">
+            <p className="text-xs font-medium truncate">
+              {org?.name ?? "No org"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {user.email}
+            </p>
+            <form action="/api/auth/logout" method="POST" className="mt-2">
+              <button className="text-xs text-muted-foreground hover:text-foreground underline">
+                Sign out
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="bg-muted/50 rounded-lg p-3 space-y-1.5">
+            <p className="text-xs font-medium">Demo mode</p>
+            <p className="text-xs text-muted-foreground">
+              <Link href="/signup" className="underline">
+                Create an account
+              </Link>{" "}
+              to keep your work.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
