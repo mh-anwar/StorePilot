@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { reviews } from "@/lib/db/schema";
+import { DEMO_ORG_ID } from "@/lib/tenant";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
   }
 
   await db.insert(reviews).values({
+    orgId: DEMO_ORG_ID,
     productId,
     authorName,
     rating,

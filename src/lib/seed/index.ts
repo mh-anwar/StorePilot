@@ -5,6 +5,7 @@ import { productsSeed } from "./products";
 import { generateCustomers } from "./customers";
 import { generateOrders } from "./orders";
 import { generateAnalyticsEvents } from "./analytics";
+import { DEMO_ORG_ID } from "../tenant";
 
 export async function seed(databaseUrl: string) {
   const sql = neon(databaseUrl);
@@ -26,6 +27,7 @@ export async function seed(databaseUrl: string) {
     const [inserted] = await db
       .insert(schema.products)
       .values({
+        orgId: DEMO_ORG_ID,
         name: p.name,
         slug: p.slug,
         description: p.description,
@@ -56,7 +58,7 @@ export async function seed(databaseUrl: string) {
   console.log("Seeding customers...");
   const customerData = generateCustomers(200);
   for (const c of customerData) {
-    await db.insert(schema.customers).values(c);
+    await db.insert(schema.customers).values({ ...c, orgId: DEMO_ORG_ID });
   }
   console.log(`  Inserted ${customerData.length} customers`);
 
@@ -78,7 +80,7 @@ export async function seed(databaseUrl: string) {
     const o = orderData[i];
     const [inserted] = await db
       .insert(schema.orders)
-      .values(o)
+      .values({ ...o, orgId: DEMO_ORG_ID })
       .returning({ id: schema.orders.id });
 
     const items = orderItemData

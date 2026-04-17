@@ -14,6 +14,7 @@ import {
 import { eq, inArray, sql } from "drizzle-orm";
 import { loadCart, getCartIdOptional, resolveDiscount } from "@/lib/cart";
 import { cookies } from "next/headers";
+import { DEMO_ORG_ID } from "@/lib/tenant";
 
 function orderNumber() {
   return "SP-" + Date.now().toString(36).toUpperCase() + "-" +
@@ -64,7 +65,15 @@ export async function POST(req: Request) {
   } else {
     const [newCust] = await db
       .insert(customers)
-      .values({ email, firstName, lastName, city: addr.city, state: addr.state, country: addr.country || "US" })
+      .values({
+        orgId: DEMO_ORG_ID,
+        email,
+        firstName,
+        lastName,
+        city: addr.city,
+        state: addr.state,
+        country: addr.country || "US",
+      })
       .returning({ id: customers.id });
     customerId = newCust.id;
   }
@@ -94,6 +103,7 @@ export async function POST(req: Request) {
   const [created] = await db
     .insert(orders)
     .values({
+      orgId: DEMO_ORG_ID,
       orderNumber: num,
       customerId,
       status: "confirmed",

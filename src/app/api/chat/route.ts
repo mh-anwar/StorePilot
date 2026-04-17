@@ -3,6 +3,7 @@ import { convertToModelMessages } from "ai";
 import { db } from "@/lib/db";
 import { threads, messages as messagesTable } from "@/lib/db/schema";
 import { nanoid } from "nanoid";
+import { getCurrentOrgId } from "@/lib/tenant";
 
 export const maxDuration = 60;
 
@@ -35,11 +36,12 @@ export async function POST(req: Request) {
   // convert UIMessages -> ModelMessages for streamText
   const modelMessages = await convertToModelMessages(body.messages);
 
+  const orgId = await getCurrentOrgId();
   if (!tid) {
     const first = body.messages[0];
     const title = first?.parts?.find((p: { type: string }) => p.type === "text")?.text?.slice(0, 100) || "New conversation";
     try {
-      await db.insert(threads).values({ id: threadId, title });
+      await db.insert(threads).values({ id: threadId, orgId, title });
     } catch { /* thread might exist */ }
   }
 

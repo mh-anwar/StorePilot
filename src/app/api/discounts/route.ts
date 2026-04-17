@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { discounts } from "@/lib/db/schema";
+import { getCurrentOrgId } from "@/lib/tenant";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -13,9 +14,11 @@ export async function POST(req: Request) {
   if (!code) return NextResponse.json({ error: "code required" }, { status: 400 });
 
   try {
+    const orgId = await getCurrentOrgId();
     const [d] = await db
       .insert(discounts)
       .values({
+        orgId,
         code,
         type,
         value,

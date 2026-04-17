@@ -12,6 +12,153 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+// Tenancy
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: varchar("name", { length: 200 }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const organizations = pgTable("organizations", {
+  id: text("id").primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  name: varchar("name", { length: 200 }).notNull(),
+  plan: varchar("plan", { length: 40 }).notNull().default("free"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const membershipRoleEnum = pgEnum("membership_role", [
+  "owner",
+  "admin",
+  "staff",
+]);
+
+export const memberships = pgTable(
+  "memberships",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    role: membershipRoleEnum("role").notNull().default("staff"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("idx_memberships_user").on(t.userId),
+    index("idx_memberships_org").on(t.orgId),
+  ]
+);
+
+export const userSessions = pgTable(
+  "user_sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    activeOrgId: text("active_org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("idx_sessions_user").on(t.userId)]
+);
+
+export const encryptedSecrets = pgTable("encrypted_secrets", {
+  id: serial("id").primaryKey(),
+  orgId: text("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  key: varchar("key", { length: 80 }).notNull(),
+  ciphertext: text("ciphertext").notNull(),
+  iv: text("iv").notNull(),
+  tag: text("tag").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const shopStatusEnum = pgEnum("shop_status", [
+  "connecting",
+  "active",
+  "uninstalled",
+  "error",
+]);
+
+export const shops = pgTable("shops", {
+  id: text("id").primaryKey(),
+  orgId: text("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  platform: varchar("platform", { length: 40 }).notNull().default("shopify"),
+  shopDomain: varchar("shop_domain", { length: 255 }).notNull(),
+  scope: text("scope"),
+  status: shopStatusEnum("status").notNull().default("connecting"),
+  installedAt: timestamp("installed_at", { withTimezone: true }),
+  uninstalledAt: timestamp("uninstalled_at", { withTimezone: true }),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const webhookEvents = pgTable(
+  "webhook_events",
+  {
+    id: serial("id").primaryKey(),
+    shopId: text("shop_id")
+      .notNull()
+      .references(() => shops.id, { onDelete: "cascade" }),
+    webhookId: varchar("webhook_id", { length: 128 }).notNull(),
+    topic: varchar("topic", { length: 128 }).notNull(),
+    payload: jsonb("payload").notNull(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    error: text("error"),
+    receivedAt: timestamp("received_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("idx_webhook_topic").on(t.topic)]
+);
+
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: serial("id").primaryKey(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    actor: varchar("actor", { length: 80 }).notNull(),
+    toolName: varchar("tool_name", { length: 120 }).notNull(),
+    target: varchar("target", { length: 200 }),
+    args: jsonb("args"),
+    result: jsonb("result"),
+    status: varchar("status", { length: 20 }).notNull().default("ok"),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("idx_audit_org").on(t.orgId),
+    index("idx_audit_created").on(t.createdAt),
+  ]
+);
+
 export const orderStatusEnum = pgEnum("order_status", [
   "pending",
   "confirmed",
@@ -49,6 +196,9 @@ export const products = pgTable(
   "products",
   {
     id: serial("id").primaryKey(),
+    orgId: text("org_id").notNull(),
+    shopId: text("shop_id"),
+    shopifyGid: text("shopify_gid"),
     name: varchar("name", { length: 255 }).notNull(),
     slug: varchar("slug", { length: 255 }).notNull().unique(),
     description: text("description"),
@@ -77,6 +227,7 @@ export const products = pgTable(
   (t) => [
     index("idx_products_category").on(t.category),
     index("idx_products_status").on(t.status),
+    index("idx_products_org").on(t.orgId),
   ]
 );
 
@@ -84,6 +235,9 @@ export const customers = pgTable(
   "customers",
   {
     id: serial("id").primaryKey(),
+    orgId: text("org_id").notNull(),
+    shopId: text("shop_id"),
+    shopifyGid: text("shopify_gid"),
     email: varchar("email", { length: 255 }).notNull().unique(),
     firstName: varchar("first_name", { length: 100 }).notNull(),
     lastName: varchar("last_name", { length: 100 }).notNull(),
@@ -107,6 +261,9 @@ export const orders = pgTable(
   "orders",
   {
     id: serial("id").primaryKey(),
+    orgId: text("org_id").notNull(),
+    shopId: text("shop_id"),
+    shopifyGid: text("shopify_gid"),
     orderNumber: varchar("order_number", { length: 20 }).notNull().unique(),
     customerId: integer("customer_id")
       .notNull()
@@ -193,6 +350,7 @@ export const analyticsEvents = pgTable(
 
 export const threads = pgTable("threads", {
   id: text("id").primaryKey(),
+  orgId: text("org_id").notNull(),
   title: varchar("title", { length: 255 }),
   summary: text("summary"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -213,6 +371,7 @@ export const discounts = pgTable(
   "discounts",
   {
     id: serial("id").primaryKey(),
+    orgId: text("org_id").notNull(),
     code: varchar("code", { length: 50 }).notNull().unique(),
     description: text("description"),
     type: discountTypeEnum("type").notNull().default("percentage"),
@@ -232,6 +391,9 @@ export const discounts = pgTable(
 
 export const collections = pgTable("collections", {
   id: serial("id").primaryKey(),
+  orgId: text("org_id").notNull(),
+  shopId: text("shop_id"),
+  shopifyGid: text("shopify_gid"),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
@@ -270,6 +432,7 @@ export const reviews = pgTable(
   "reviews",
   {
     id: serial("id").primaryKey(),
+    orgId: text("org_id").notNull(),
     productId: integer("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
@@ -304,6 +467,7 @@ export const automationStatusEnum = pgEnum("automation_status", [
 
 export const automations = pgTable("automations", {
   id: serial("id").primaryKey(),
+  orgId: text("org_id").notNull(),
   name: varchar("name", { length: 200 }).notNull(),
   description: text("description"),
   trigger: automationTriggerEnum("trigger").notNull().default("manual"),
@@ -391,6 +555,7 @@ export const inventoryAdjustments = pgTable(
 
 export const storeSettings = pgTable("store_settings", {
   key: varchar("key", { length: 100 }).primaryKey(),
+  orgId: text("org_id"),
   value: jsonb("value").$type<unknown>().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
