@@ -1,8 +1,11 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { products, orderItems, orders } from "@/lib/db/schema";
-import { sql, eq, lte, desc, and, gte, count, sum, avg } from "drizzle-orm";
+import { products, shops } from "@/lib/db/schema";
+import { sql, eq, and } from "drizzle-orm";
+import { recordAudit } from "../audit";
+import { getCurrentOrgId } from "@/lib/tenant";
+import { adminContext, adminGraphql } from "@/lib/shopify/admin";
 
 export const inventoryTools = {
   inventory__check_stock_levels: tool({
@@ -127,32 +130,73 @@ export const inventoryTools = {
       reason: z.string().describe("Reason for the stock change"),
     }),
     execute: async ({ productId, newStock, reason }) => {
+      const orgId = await getCurrentOrgId();
       const [product] = await db
         .select({
           id: products.id,
           name: products.name,
           stock: products.stock,
+          shopId: products.shopId,
+          shopifyGid: products.shopifyGid,
         })
         .from(products)
-        .where(eq(products.id, productId))
+        .where(and(eq(products.id, productId), eq(products.orgId, orgId)))
         .limit(1);
 
-      if (!product) return { error: `Product ${productId} not found` };
+      if (!product) {
+        await recordAudit({
+          orgId,
+          actor: "agent:inventory",
+          toolName: "inventory__update_stock",
+          args: { productId, newStock, reason },
+          status: "error",
+          error: "not found",
+        });
+        return { error: `Product ${productId} not found` };
+      }
 
       const previousStock = product.stock;
-      await db
-        .update(products)
-        .set({ stock: newStock, updatedAt: new Date() })
-        .where(eq(products.id, productId));
 
-      return {
-        productId,
-        productName: product.name,
-        previousStock,
-        newStock,
-        change: newStock - previousStock,
-        reason,
-      };
+      try {
+        // Shopify-backed product? Push the change to the Admin API first.
+        if (product.shopId && product.shopifyGid) {
+          await updateShopifyInventory(product.shopId, product.shopifyGid, newStock);
+        }
+        await db
+          .update(products)
+          .set({ stock: newStock, updatedAt: new Date() })
+          .where(eq(products.id, productId));
+
+        const result = {
+          productId,
+          productName: product.name,
+          previousStock,
+          newStock,
+          change: newStock - previousStock,
+          reason,
+          backend: product.shopId ? "shopify" : "native",
+        };
+        await recordAudit({
+          orgId,
+          actor: "agent:inventory",
+          toolName: "inventory__update_stock",
+          target: `product:${productId}`,
+          args: { productId, newStock, reason },
+          result,
+        });
+        return result;
+      } catch (e) {
+        await recordAudit({
+          orgId,
+          actor: "agent:inventory",
+          toolName: "inventory__update_stock",
+          target: `product:${productId}`,
+          args: { productId, newStock, reason },
+          status: "error",
+          error: (e as Error).message,
+        });
+        return { error: (e as Error).message };
+      }
     },
   }),
 
@@ -212,3 +256,56 @@ export const inventoryTools = {
     },
   }),
 };
+
+// Push an absolute inventory quantity to Shopify. Implementation note:
+// Shopify's v2 model is variant → inventory_item → inventory_level at a
+// location. We resolve the variant's inventory_item and the shop's
+// primary location, then call inventorySetQuantities (as of 2025-01 API).
+async function updateShopifyInventory(
+  shopId: string,
+  productGid: string,
+  quantity: number
+): Promise<void> {
+  const ctx = await adminContext(shopId);
+  type VariantLookup = {
+    product: {
+      variants: {
+        edges: Array<{
+          node: { id: string; inventoryItem: { id: string } };
+        }>;
+      };
+    } | null;
+    locations: { edges: Array<{ node: { id: string } }> };
+  };
+  const data = await adminGraphql<VariantLookup>(
+    ctx,
+    `query V($gid: ID!) {
+      product(id: $gid) {
+        variants(first: 1) { edges { node { id inventoryItem { id } } } }
+      }
+      locations(first: 1) { edges { node { id } } }
+    }`,
+    { gid: productGid }
+  );
+  const invItemId = data.product?.variants.edges[0]?.node.inventoryItem.id;
+  const locationId = data.locations.edges[0]?.node.id;
+  if (!invItemId || !locationId) {
+    throw new Error("could not resolve inventory item or location");
+  }
+  await adminGraphql(
+    ctx,
+    `mutation Set($input: InventorySetQuantitiesInput!) {
+      inventorySetQuantities(input: $input) {
+        userErrors { field message }
+      }
+    }`,
+    {
+      input: {
+        name: "available",
+        reason: "correction",
+        ignoreCompareQuantity: true,
+        quantities: [{ inventoryItemId: invItemId, locationId, quantity }],
+      },
+    }
+  );
+}

@@ -135,6 +135,35 @@ export const webhookEvents = pgTable(
   (t) => [index("idx_webhook_topic").on(t.topic)]
 );
 
+export const jobStatusEnum = pgEnum("job_status", [
+  "pending",
+  "running",
+  "succeeded",
+  "failed",
+]);
+
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: serial("id").primaryKey(),
+    kind: varchar("kind", { length: 80 }).notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    status: jobStatusEnum("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("idx_jobs_status_runat").on(t.status, t.runAt),
+    index("idx_jobs_kind").on(t.kind),
+  ]
+);
+
 export const auditLog = pgTable(
   "audit_log",
   {

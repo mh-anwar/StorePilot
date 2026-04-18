@@ -16,6 +16,7 @@ import {
   Workflow,
   Settings,
   Store,
+  ShoppingBasket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/dashboard/reviews", label: "Reviews", icon: Star },
   { href: "/dashboard/automations", label: "Automations", icon: Workflow },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/shopify", label: "Shopify", icon: ShoppingBasket },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
   { href: "/chat", label: "AI Chat", icon: MessageSquare },
   { href: "/shop", label: "View Storefront", icon: Store },
