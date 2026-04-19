@@ -17,22 +17,24 @@ import {
   Settings,
   Store,
   ShoppingBasket,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/workflows", label: "Workflows", icon: Workflow, primary: true },
+  { href: "/dashboard/proposals", label: "Proposals", icon: CheckCircle2, primary: true },
+  { href: "/dashboard/shopify", label: "Shopify", icon: ShoppingBasket },
   { href: "/dashboard/products", label: "Products", icon: Package },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/collections", label: "Collections", icon: Layers },
   { href: "/dashboard/discounts", label: "Discounts", icon: Tag },
   { href: "/dashboard/reviews", label: "Reviews", icon: Star },
-  { href: "/dashboard/automations", label: "Automations", icon: Workflow },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/dashboard/shopify", label: "Shopify", icon: ShoppingBasket },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
-  { href: "/chat", label: "AI Chat", icon: MessageSquare },
+  { href: "/chat", label: "Chat (beta)", icon: MessageSquare },
   { href: "/shop", label: "View Storefront", icon: Store },
 ];
 

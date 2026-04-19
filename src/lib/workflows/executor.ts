@@ -135,6 +135,29 @@ export async function runWorkflow(runId: string): Promise<void> {
       continue;
     }
 
+    if (result.status === "stop") {
+      // Gate short-circuit — finish the run cleanly without running the
+      // remaining steps. We mark the gating step as "skipped" so the
+      // UI shows it didn't "execute", and the run as "succeeded".
+      await markStepRun(sr.id, {
+        status: "skipped",
+        output: { stopped: true, reason: result.reason ?? "condition was false" },
+      });
+      await db
+        .update(workflowRuns)
+        .set({
+          status: "succeeded",
+          finishedAt: new Date(),
+          currentStep: i + 1,
+        })
+        .where(eq(workflowRuns.id, runId));
+      await db
+        .update(workflows)
+        .set({ lastRunAt: new Date() })
+        .where(eq(workflows.id, wf.id));
+      return;
+    }
+
     if (result.status === "awaiting_approval") {
       // Suspend. Store the resolved action so the approver sees exactly
       // what will happen, and remember the step index so we resume here.

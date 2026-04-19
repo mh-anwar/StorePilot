@@ -1,79 +1,113 @@
 # StorePilot
 
-> Running a shop is boring glue work — this is what happens when you hand the glue to a few agents.
+> The automations layer Shopify Flow should have been. With an LLM instead of if/then.
 
-StorePilot is a demo of what a small Shopify-style merchant could have if agents actually did the job instead of just talking about it. There's a public shop people can browse and check out on. There's a merchant desk. And there's a chat where four specialized agents sit on real data and answer real questions — then automations that run those agents on a schedule and log what they did.
+Shopify Flow is rule-based: if order tagged X, then add tag Y. Great for plumbing, useless when you actually need to think. Shopify Sidekick is conversational: it acts once, then it's done. Neither of them schedules, retries, stops for approval, or reasons about an order the way a human would.
 
-It's a side project, not a SaaS. But it's the kind of side project I want to be able to walk someone through without caveats.
+StorePilot is a workflow engine for Shopify where **any step can be an LLM**, **any step can pause for approval**, and everything that happens lives in an audit log your ops team can trust.
 
----
-
-## What's in the box
-
-**A storefront shoppers can actually use.** Product catalog, search, PDP with reviews, cart with discount codes, checkout that writes a real order and decrements real stock. Stock updates stream live via SSE so two people on two tabs see inventory move as it moves.
-
-**A merchant desk.** Orders, products, customers, collections, discounts, review moderation, analytics, settings. Nothing fancy — the kind of plain tables and small forms that actually ship.
-
-**Four agents with real tools.**
-
-- **Analytics** — revenue trends, top products, customer segments, traffic, anomaly detection
-- **Content** — descriptions, SEO, pricing suggestions, bulk listing work
-- **Inventory** — stock monitoring, restock recs, demand forecasts, direct updates
-- **Marketing** — campaigns, email copy, social posts, discount strategies
-
-All tools are flat-mapped and namespaced (`analytics__query_revenue`, etc.) into a single orchestrator so there's no nested-LLM latency trap. The supervisor plans, delegates, and reports.
-
-**Automations.** Plain-English jobs — "every morning, list the five lowest-stock SKUs and draft a restock email" — saved, pinned to a trigger, runnable on demand, with a history log that keeps tool calls and output around.
-
-**Bring your own key.** The chat will gladly use a server-side Anthropic key if you set one, but you can also drop a key into Settings; it's stashed in `localStorage` and only ever sent to Anthropic on your behalf. Swap models while you're at it.
-
-## How it fits together
+## What a workflow looks like
 
 ```
-┌─────────────┐   ┌─────────────────┐   ┌───────────────┐
-│  Storefront │◄─►│  Next.js API    │◄─►│  Neon Postgres │
-│  /shop/*    │   │  /api/shop/*    │   │  products,     │
-│  SSE stream │   │  /api/chat      │   │  orders,       │
-└─────────────┘   │  /api/automations│  │  carts, etc.   │
-                  └─────────┬───────┘   └────────┬───────┘
-                            │                    │
-                    ┌───────▼──────┐    ┌────────▼────────┐
-                    │ Orchestrator │    │ Automation run  │
-                    │ + 4 agents   │───►│ history         │
-                    └──────────────┘    └─────────────────┘
+trigger:        orders/create
+├─ step 1  llm.reason     score this order for fraud risk
+├─ step 2  condition      steps.analyze.output.fraud_score > 0.6
+├─ step 3  proposal.gate  flag customer 'fraud-review' (awaits approval)
+└─ step 4  notify.email   ping ops@company.com
 ```
 
-All the agent tools query the same Postgres the storefront writes to, so the advice is grounded in the store's actual state — not a vibes-based summary.
+Five built-in step types cover most of what merchants ask for:
 
-## Stack
+- **`llm.reason`** / **`llm.classify`** — call a model with a structured-output schema. The result is typed JSON downstream steps reference as `{{steps.analyze.output.fraud_score}}`.
+- **`condition`** — a tiny expression evaluator (`>`, `<`, `==`, `&&`, `||`, etc.) against the trigger and previous steps. A false condition halts the workflow cleanly.
+- **`store.*`** — first-class Shopify Admin API writes: `update_inventory`, `update_price`, `create_discount`, `tag_customer`, `fetch_order`, `low_stock_report`. Actions route to Shopify when the store is connected; fall back to the native DB otherwise.
+- **`notify.*`** / **`http.request`** — email (Resend), Slack webhook, arbitrary outbound HTTP.
+- **`proposal.gate`** — stops the workflow and routes the proposed action to your Proposals inbox with full context and LLM rationale. Approve → it runs. Reject → the run continues with the gate skipped.
 
-Next.js 16 (App Router), TypeScript, Vercel AI SDK v6, Claude (Sonnet 4 by default), Drizzle ORM on Neon serverless Postgres, Tailwind v4, a little Recharts, a little Framer Motion.
+Triggers: **manual**, **schedule** (every N minutes), **shopify event** (any webhook topic), **http webhook** (per-workflow token).
 
-## Run it
+## Things you cannot build in Flow
+
+- Fraud triage that reads the shipping address like a human and routes suspicious orders.
+- A daily restock plan that proposes order quantities based on velocity and a merchant's notes, with approval before a PO ever sends.
+- Tone-matched replies to bad reviews, with a proposed refund the merchant can one-click approve.
+- A slow-mover discount generator that picks the SKUs, writes the code, and drafts the Klaviyo email.
+- A VIP pipeline: the moment an order crosses a threshold, tag, email, and generate a one-time code — all from reasoning, not if/then.
+
+## Why it's not Shopify Flow, Sidekick, or Zapier
+
+| | them | us |
+|---|---|---|
+| Shopify Flow | rules only, no LLM, no reasoning | LLM-first, structured outputs pipe downstream |
+| Shopify Sidekick | conversational, acts once | persistent workflows, triggers, retries, audit log |
+| Zapier + GPT block | generic, no Shopify-aware writes, no approvals | first-class Admin API actions, proposals inbox |
+
+## Trust
+
+Autonomous where you want it, supervised where it counts.
+
+- **Proposals inbox** — any step marked `requiresApproval` stops the run, posts the resolved action config to a queue, and waits. Merchants approve or reject; the run continues.
+- **Audit log** — every write an agent makes lands in `audit_log` with the actor, the tool, the args, the result.
+- **Versioned workflows** — every save bumps the version; runs are pinned to the version that executed them. You can see what rule produced a change a month ago.
+
+## Running locally
 
 ```bash
 pnpm install
-cp .env.example .env.local   # DATABASE_URL and (optional) ANTHROPIC_API_KEY
-pnpm db:push                 # or: pnpm tsx scripts/migrate-new-tables.ts
-pnpm db:seed                 # 48 products, 200 customers, 1.2k orders, 15k events
+cp .env.example .env.local                   # DATABASE_URL, APP_ENCRYPTION_KEY, SESSION_SECRET
+pnpm tsx scripts/migrate-tenancy.ts          # tenancy tables
+pnpm tsx scripts/migrate-new-tables.ts       # store tables
+pnpm tsx scripts/migrate-jobs.ts             # job queue
+pnpm tsx scripts/migrate-workflows.ts        # workflow engine
+pnpm db:seed                                 # demo products/orders/customers
 pnpm dev
 ```
 
 Then:
 
 - [/](http://localhost:3000) — the pitch
-- [/shop](http://localhost:3000/shop) — the demo shop (add things to the cart, check out)
-- [/dashboard](http://localhost:3000/dashboard) — the merchant desk
-- [/chat](http://localhost:3000/chat) — talk to the agents
-- [/dashboard/automations](http://localhost:3000/dashboard/automations) — schedule and watch them work
-- [/dashboard/settings](http://localhost:3000/dashboard/settings) — drop in your own Anthropic key
+- [/signup](http://localhost:3000/signup) — create a workspace
+- [/dashboard/workflows](http://localhost:3000/dashboard/workflows) — build and run
+- [/dashboard/proposals](http://localhost:3000/dashboard/proposals) — approve actions
+- [/dashboard/shopify](http://localhost:3000/dashboard/shopify) — connect a Shopify store
+- [/shop](http://localhost:3000/shop) — the demo storefront (so you can generate real orders against the mirror)
+
+## Architecture at a glance
+
+```
+Shopify webhook ──► HMAC-verified /api/shopify/webhooks
+                         │
+                         ▼
+              webhook_events + jobs (pg)
+                         │
+                         ▼
+           worker drains queue
+                         │           ┌──────────────────────────┐
+                         └──────────►│ workflow fanout           │
+                                     │  trigger = shopify+topic  │
+                                     └───────────┬──────────────┘
+                                                 ▼
+                            runWorkflow: resolve config → step handlers
+                                                 │
+                    ┌────────────────────────────┼────────────────────────────┐
+                    ▼                            ▼                            ▼
+              llm.reason                   store.update_*                 proposal.gate
+            (structured JSON)             (Shopify Admin API)            (human inbox)
+                                                                              │
+                                                         approve ─────────────┘
+                                                         → resume run
+```
+
+## Stack
+
+Next.js 16 · TypeScript · Vercel AI SDK v6 · Claude Sonnet 4 · Drizzle ORM on Neon Postgres · Tailwind v4 · Postgres-backed job queue with `FOR UPDATE SKIP LOCKED`.
 
 ## A few honest notes
 
-- Checkout does not take real payment. It writes an order and decrements stock; that's the demo.
-- Seed data is deterministic, so `pnpm db:seed` on a fresh DB gives you something recognizable.
-- The "realtime" shop is poll-based SSE (every few seconds). A production build would put Postgres LISTEN/NOTIFY or a broker in front of it.
-- Access-code gating on `/chat` is there so a public deploy doesn't burn through the owner's API credits; set `ACCESS_CODE` in env to turn it on. Users who bring their own key bypass it.
+- The worker is `/api/jobs/tick`. In production, point a cron at it every minute or run a long-lived worker.
+- "Run now" for workflows is inline (synchronous) for fast UI feedback; triggered runs go through the queue.
+- HMAC-verified Shopify webhook ingestion is wired, but you need a Shopify Partner app to get `SHOPIFY_API_KEY` / `SHOPIFY_API_SECRET` and a public `APP_URL`.
+- The app's own storefront is a *demo* — it shares the DB with the workflow engine so you can generate real orders and see workflows react.
 
 ## License
 

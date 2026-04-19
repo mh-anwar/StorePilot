@@ -24,6 +24,11 @@ export type RunContext = {
 export type StepResult =
   | { status: "ok"; output: unknown; summary?: string }
   | { status: "skipped"; reason: string }
+  /**
+   * Halt the workflow cleanly (no further steps run, run is marked
+   * succeeded). Used by condition gates — "condition was false, stop."
+   */
+  | { status: "stop"; reason?: string }
   | { status: "error"; error: string }
   /**
    * Special: the step generated a proposal that must be approved

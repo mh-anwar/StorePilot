@@ -162,7 +162,9 @@ registerStep("condition", {
     };
     const result = evalCondition(expression, scope);
     if (!result) {
-      return { status: "skipped", reason: `expression '${expression}' was false` };
+      // Condition gates the rest of the workflow — a false condition
+      // halts the run cleanly rather than just skipping its own step.
+      return { status: "stop", reason: `expression '${expression}' was false` };
     }
     return { status: "ok", output: { passed: true } };
   },
