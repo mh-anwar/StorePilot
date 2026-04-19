@@ -135,6 +135,173 @@ export const webhookEvents = pgTable(
   (t) => [index("idx_webhook_topic").on(t.topic)]
 );
 
+// Workflow engine: the new core. Workflows are trigger + ordered steps
+// stored as JSON. Runs, step_runs and proposals are append-only activity
+// tables that the UI reads directly.
+export const workflowStatusEnum = pgEnum("workflow_status", [
+  "active",
+  "paused",
+  "archived",
+]);
+
+export const workflowRunStatusEnum = pgEnum("workflow_run_status", [
+  "queued",
+  "running",
+  "succeeded",
+  "failed",
+  "awaiting_approval",
+  "cancelled",
+]);
+
+export const stepRunStatusEnum = pgEnum("step_run_status", [
+  "pending",
+  "running",
+  "succeeded",
+  "failed",
+  "skipped",
+  "awaiting_approval",
+]);
+
+export const proposalStatusEnum = pgEnum("proposal_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "expired",
+  "applied",
+]);
+
+export type WorkflowTrigger =
+  | { type: "manual" }
+  | { type: "schedule"; cron?: string; intervalMinutes?: number }
+  | { type: "shopify"; topic: string }
+  | { type: "http"; token?: string };
+
+export type WorkflowStep = {
+  id: string;
+  type: string; // e.g. 'llm.reason', 'store.update_inventory', 'notify.email'
+  config: Record<string, unknown>;
+  requiresApproval?: boolean;
+  onError?: "continue" | "fail";
+};
+
+export const workflows = pgTable(
+  "workflows",
+  {
+    id: text("id").primaryKey(),
+    orgId: text("org_id").notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    description: text("description"),
+    status: workflowStatusEnum("status").notNull().default("active"),
+    trigger: jsonb("trigger").$type<WorkflowTrigger>().notNull(),
+    steps: jsonb("steps").$type<WorkflowStep[]>().notNull(),
+    version: integer("version").notNull().default(1),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("idx_workflows_org").on(t.orgId)]
+);
+
+export const workflowRuns = pgTable(
+  "workflow_runs",
+  {
+    id: text("id").primaryKey(),
+    workflowId: text("workflow_id")
+      .notNull()
+      .references(() => workflows.id, { onDelete: "cascade" }),
+    orgId: text("org_id").notNull(),
+    status: workflowRunStatusEnum("status").notNull().default("queued"),
+    triggerData: jsonb("trigger_data")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    context: jsonb("context")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    currentStep: integer("current_step").notNull().default(0),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("idx_wruns_workflow").on(t.workflowId),
+    index("idx_wruns_status").on(t.status),
+  ]
+);
+
+export const stepRuns = pgTable(
+  "step_runs",
+  {
+    id: serial("id").primaryKey(),
+    runId: text("run_id")
+      .notNull()
+      .references(() => workflowRuns.id, { onDelete: "cascade" }),
+    stepIndex: integer("step_index").notNull(),
+    stepId: varchar("step_id", { length: 80 }).notNull(),
+    stepType: varchar("step_type", { length: 80 }).notNull(),
+    status: stepRunStatusEnum("status").notNull().default("pending"),
+    input: jsonb("input"),
+    output: jsonb("output"),
+    error: text("error"),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [index("idx_step_runs_run").on(t.runId, t.stepIndex)]
+);
+
+export const proposals = pgTable(
+  "proposals",
+  {
+    id: text("id").primaryKey(),
+    orgId: text("org_id").notNull(),
+    runId: text("run_id").references(() => workflowRuns.id, {
+      onDelete: "cascade",
+    }),
+    stepId: varchar("step_id", { length: 80 }),
+    actionType: varchar("action_type", { length: 80 }).notNull(),
+    actionConfig: jsonb("action_config")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    summary: text("summary"),
+    rationale: text("rationale"),
+    status: proposalStatusEnum("status").notNull().default("pending"),
+    resolverUserId: text("resolver_user_id"),
+    resolverNote: text("resolver_note"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    appliedResult: jsonb("applied_result"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("idx_proposals_org_status").on(t.orgId, t.status)]
+);
+
+export const notificationConfigs = pgTable(
+  "notification_configs",
+  {
+    id: serial("id").primaryKey(),
+    orgId: text("org_id").notNull(),
+    kind: varchar("kind", { length: 40 }).notNull(),
+    label: varchar("label", { length: 120 }).notNull(),
+    config: jsonb("config").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("idx_notif_org").on(t.orgId)]
+);
+
 export const jobStatusEnum = pgEnum("job_status", [
   "pending",
   "running",

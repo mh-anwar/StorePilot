@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { drainQueue } from "@/lib/queue";
 // Importing handlers registers them against the queue registry.
 import "@/lib/queue/handlers";
+import { fanoutSchedule } from "@/lib/workflows/triggers";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,8 +17,11 @@ export async function GET(req: Request) {
   if (process.env.TICK_SECRET && secret !== process.env.TICK_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const count = await drainQueue(25);
-  return NextResponse.json({ ok: true, processed: count });
+  // 1) Fan out schedule-triggered workflows whose interval is due.
+  const scheduled = await fanoutSchedule();
+  // 2) Drain queued jobs (webhooks, syncs, workflow runs) in a batch.
+  const processed = await drainQueue(25);
+  return NextResponse.json({ ok: true, scheduled, processed });
 }
 
 export const POST = GET;

@@ -13,7 +13,9 @@ export type JobKind =
   | "shopify.sync.products"
   | "shopify.sync.orders"
   | "shopify.sync.customers"
-  | "automation.run";
+  | "automation.run"
+  | "workflow.run"
+  | "workflow.resume";
 
 type HandlerFn = (payload: Record<string, unknown>) => Promise<void>;
 const handlers = new Map<JobKind, HandlerFn>();
