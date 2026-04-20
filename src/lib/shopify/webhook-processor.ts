@@ -7,10 +7,12 @@ import {
   shops,
   products,
   orders,
+  orderItems,
   customers,
 } from "../db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { deleteSecret } from "../crypto";
+import { recordAudit } from "../agents/audit";
 
 type WebhookPayload = Record<string, unknown> & { id?: number | string };
 
@@ -65,18 +67,23 @@ export async function processWebhook(args: {
         await handleUninstall(args.shopId);
         break;
       case "customers/data_request":
+        // We don't have rich customer content to export beyond mirror
+        // rows; record the request as an audit entry so a human can
+        // respond within Shopify's 30-day SLA.
+        await recordAudit({
+          orgId: (await shopOrg(args.shopId)) ?? "",
+          actor: `system:gdpr`,
+          toolName: "gdpr.data_request",
+          target: `customer:${(payload.customer as { email?: string })?.email ?? "?"}`,
+          args: payload as Record<string, unknown>,
+        });
+        break;
       case "customers/redact":
+        await redactCustomer(args.shopId, payload);
+        break;
       case "shop/redact":
-        // GDPR topics: log, ack. Real redaction logic goes here — for now
-        // we record the request so a human can follow up.
-        await db
-          .update(webhookEvents)
-          .set({
-            processedAt: new Date(),
-            error: "GDPR topic — no auto-action, review manually",
-          })
-          .where(eq(webhookEvents.id, row.id));
-        return;
+        await redactShop(args.shopId);
+        break;
       default:
         // Unknown topic — ack.
         break;
@@ -244,4 +251,80 @@ async function handleUninstall(shopId: string) {
     .where(eq(shops.id, shopId));
   // Tokens are no longer valid — delete them.
   await deleteSecret(s.orgId, `shopify:${shopId}:token`);
+}
+
+async function shopOrg(shopId: string): Promise<string | null> {
+  const [s] = await db.select().from(shops).where(eq(shops.id, shopId));
+  return s?.orgId ?? null;
+}
+
+// Delete mirrored customer data on customers/redact. Shopify sends this
+// 30 days after a customer requests redaction. We remove PII-bearing
+// rows in the mirror and log a system audit entry.
+async function redactCustomer(shopId: string, payload: WebhookPayload) {
+  const orgId = await shopOrg(shopId);
+  if (!orgId) return;
+  const email = ((payload.customer as { email?: string })?.email ?? "").toLowerCase();
+  const shopifyGid = payload.customer
+    ? `gid://shopify/Customer/${(payload.customer as { id: number }).id}`
+    : null;
+
+  // Find the mirror row(s) for this customer.
+  const rows = await db
+    .select()
+    .from(customers)
+    .where(
+      and(
+        eq(customers.orgId, orgId),
+        email
+          ? eq(customers.email, email)
+          : shopifyGid
+            ? eq(customers.shopifyGid, shopifyGid)
+            : sql`false`
+      )
+    );
+  for (const c of rows) {
+    // Cascade-clean orders + items so we don't leave orphaned PII.
+    const ordersToClean = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.customerId, c.id));
+    for (const o of ordersToClean) {
+      await db.delete(orderItems).where(eq(orderItems.orderId, o.id));
+    }
+    await db.delete(orders).where(eq(orders.customerId, c.id));
+    await db.delete(customers).where(eq(customers.id, c.id));
+  }
+  await recordAudit({
+    orgId,
+    actor: "system:gdpr",
+    toolName: "gdpr.customers_redact",
+    target: email || shopifyGid || "unknown",
+    args: { shopId, email, shopifyGid },
+    result: { deletedCustomers: rows.length },
+  });
+}
+
+// Delete all data for a shop on shop/redact. Fired 48h after app
+// uninstall; at that point we must purge.
+async function redactShop(shopId: string) {
+  const orgId = await shopOrg(shopId);
+  if (!orgId) return;
+  // Orders → items cascade; customers cascade; products cascade.
+  await db.delete(orderItems).where(
+    sql`${orderItems.orderId} IN (SELECT id FROM orders WHERE shop_id = ${shopId})`
+  );
+  await db.delete(orders).where(eq(orders.shopId, shopId));
+  await db.delete(customers).where(eq(customers.shopId, shopId));
+  await db.delete(products).where(eq(products.shopId, shopId));
+  // Finally drop the shop row itself. encrypted_secrets was already
+  // cleared on app/uninstalled.
+  await db.delete(shops).where(eq(shops.id, shopId));
+  await recordAudit({
+    orgId,
+    actor: "system:gdpr",
+    toolName: "gdpr.shop_redact",
+    target: shopId,
+    args: { shopId },
+  });
 }

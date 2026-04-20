@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { cartItems, carts, products } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getOrCreateCartId, loadCart } from "@/lib/cart";
+import { DEMO_ORG_ID } from "@/lib/tenant";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -12,7 +13,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "productId required" }, { status: 400 });
   }
 
-  const [p] = await db.select().from(products).where(eq(products.id, productId));
+  const [p] = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.id, productId), eq(products.orgId, DEMO_ORG_ID)));
   if (!p) return NextResponse.json({ error: "not found" }, { status: 404 });
   if (p.status !== "active") {
     return NextResponse.json({ error: "unavailable" }, { status: 400 });

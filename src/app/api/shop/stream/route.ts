@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
+import { DEMO_ORG_ID } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,7 +37,9 @@ export async function GET(req: Request) {
           const rows = await db
             .select({ id: products.id, stock: products.stock })
             .from(products)
-            .where(inArray(products.id, ids));
+            .where(
+              and(eq(products.orgId, DEMO_ORG_ID), inArray(products.id, ids))
+            );
           const changed = rows.filter((r) => last.get(r.id) !== r.stock);
           for (const r of rows) last.set(r.id, r.stock);
           if (changed.length > 0) send("stock", changed);

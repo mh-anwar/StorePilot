@@ -3,6 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { products, reviews } from "@/lib/db/schema";
 import { eq, and, desc, ne } from "drizzle-orm";
+import { DEMO_ORG_ID } from "@/lib/tenant";
 import { PDPActions } from "@/components/shop/pdp-actions";
 import { LiveInventory } from "@/components/shop/live-inventory";
 import { ReviewsSection } from "@/components/shop/reviews-section";
@@ -15,13 +16,22 @@ export default async function PDP({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [p] = await db.select().from(products).where(eq(products.slug, slug));
+  const [p] = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.slug, slug), eq(products.orgId, DEMO_ORG_ID)));
   if (!p) notFound();
 
   const related = await db
     .select()
     .from(products)
-    .where(and(eq(products.category, p.category), ne(products.id, p.id)))
+    .where(
+      and(
+        eq(products.orgId, DEMO_ORG_ID),
+        eq(products.category, p.category),
+        ne(products.id, p.id)
+      )
+    )
     .limit(4);
 
   const productReviews = await db

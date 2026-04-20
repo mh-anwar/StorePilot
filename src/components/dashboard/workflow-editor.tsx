@@ -50,6 +50,8 @@ export function WorkflowEditor({
   const [pending, start] = useTransition();
   const [status, setStatus] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testPayload, setTestPayload] = useState("{}");
   const router = useRouter();
 
   function save() {
@@ -71,14 +73,14 @@ export function WorkflowEditor({
     });
   }
 
-  async function runNow() {
+  async function runNow(triggerData: unknown = {}) {
     setRunning(true);
     setStatus("Running…");
     try {
       const r = await fetch(`/api/workflows/${state.id}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ triggerData: {} }),
+        body: JSON.stringify({ triggerData }),
       });
       const j = await r.json();
       if (!r.ok) setStatus(j.error ?? "Run failed");
@@ -89,7 +91,21 @@ export function WorkflowEditor({
       }
     } finally {
       setRunning(false);
+      setShowTestModal(false);
     }
+  }
+
+  function openTest() {
+    // Seed with a sensible sample based on trigger type.
+    const t = state.trigger;
+    const sample =
+      t.type === "shopify"
+        ? sampleForShopifyTopic((t as { topic: string }).topic)
+        : t.type === "schedule"
+          ? { scheduledAt: new Date().toISOString() }
+          : { sample: true };
+    setTestPayload(JSON.stringify(sample, null, 2));
+    setShowTestModal(true);
   }
 
   function addStep(type: string) {
@@ -154,15 +170,73 @@ export function WorkflowEditor({
             Save
           </button>
           <button
-            onClick={runNow}
+            onClick={() => runNow({})}
             disabled={running}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted disabled:opacity-50"
           >
             {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
             Run now
           </button>
+          <button
+            onClick={openTest}
+            disabled={running}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted disabled:opacity-50"
+          >
+            Test with payload
+          </button>
         </div>
       </div>
+
+      {showTestModal && (
+        <div
+          onClick={() => setShowTestModal(false)}
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card border border-border rounded-xl max-w-2xl w-full"
+          >
+            <div className="p-5 border-b border-border">
+              <h2 className="font-semibold">Test with a trigger payload</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your steps receive this as <code>{"{{trigger.*}}"}</code>. Good
+                for dry-running a workflow against a realistic order without
+                waiting for Shopify to fire one.
+              </p>
+            </div>
+            <div className="p-4">
+              <textarea
+                value={testPayload}
+                onChange={(e) => setTestPayload(e.target.value)}
+                rows={14}
+                className="w-full font-mono text-xs px-3 py-2 rounded bg-muted border border-border"
+              />
+            </div>
+            <div className="p-4 border-t border-border flex items-center justify-end gap-2">
+              <button
+                onClick={() => setShowTestModal(false)}
+                className="px-3 py-1.5 rounded-lg border border-border text-sm hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    runNow(JSON.parse(testPayload));
+                  } catch (e) {
+                    setStatus(`Invalid JSON: ${(e as Error).message}`);
+                  }
+                }}
+                disabled={running}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-violet-600 text-white text-sm disabled:opacity-50"
+              >
+                {running && <Loader2 className="h-4 w-4 animate-spin" />}
+                Run with this payload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {status && <p className="text-xs text-muted-foreground">{status}</p>}
 
@@ -529,6 +603,51 @@ function defaultConfigFor(type: string): Record<string, unknown> {
       };
   }
   return {};
+}
+
+function sampleForShopifyTopic(topic: string): Record<string, unknown> {
+  // Minimal sample shapes so authors can test workflows without firing a
+  // real Shopify event. These are the fields our handlers actually read.
+  const base = { topic };
+  if (topic.startsWith("orders/")) {
+    return {
+      ...base,
+      payload: {
+        id: 99999,
+        name: "#1999",
+        total_price: "125.00",
+        subtotal_price: "120.00",
+        total_tax: "5.00",
+        total_discounts: "0.00",
+        financial_status: "paid",
+        customer: { id: 42, email: "jane@example.com" },
+      },
+    };
+  }
+  if (topic.startsWith("products/")) {
+    return {
+      ...base,
+      payload: {
+        id: 777,
+        title: "Demo Product",
+        handle: "demo-product",
+        status: "active",
+        variants: [{ price: "29.99", inventory_quantity: 5, sku: "DEMO-1" }],
+      },
+    };
+  }
+  if (topic.startsWith("customers/")) {
+    return {
+      ...base,
+      payload: {
+        id: 42,
+        email: "jane@example.com",
+        first_name: "Jane",
+        last_name: "Doe",
+      },
+    };
+  }
+  return base;
 }
 
 function cryptoRandom() {

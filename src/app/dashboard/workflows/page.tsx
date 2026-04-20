@@ -19,11 +19,20 @@ export default async function WorkflowsPage() {
     .where(eq(workflows.orgId, orgId))
     .orderBy(desc(workflows.updatedAt));
 
-  // Recent run + pending proposal counts per workflow
+  // Per-workflow metrics: total, 7-day runs, success rate, median
+  // duration, last run status. One query keeps the page snappy.
   const runStats = await db
     .select({
       workflowId: workflowRuns.workflowId,
       total: sql<number>`count(*)`.as("total"),
+      week: sql<number>`count(*) filter (where ${workflowRuns.createdAt} >= NOW() - INTERVAL '7 days')`.as("week"),
+      successes: sql<number>`count(*) filter (where ${workflowRuns.status} = 'succeeded')`.as("successes"),
+      failures: sql<number>`count(*) filter (where ${workflowRuns.status} = 'failed')`.as("failures"),
+      medianDurationMs: sql<number>`
+        percentile_cont(0.5) within group (order by
+          EXTRACT(EPOCH FROM (${workflowRuns.finishedAt} - ${workflowRuns.startedAt})) * 1000
+        ) filter (where ${workflowRuns.finishedAt} is not null and ${workflowRuns.startedAt} is not null)
+      `.as("median_ms"),
       last: sql<Date>`max(${workflowRuns.createdAt})`.as("last"),
       lastStatus: sql<string>`(array_agg(${workflowRuns.status} order by ${workflowRuns.createdAt} desc))[1]`.as("last_status"),
     })
@@ -105,21 +114,35 @@ export default async function WorkflowsPage() {
                 <div className="text-right text-xs text-muted-foreground shrink-0">
                   <p>{(w.steps as unknown[])?.length ?? 0} steps</p>
                   {stats && (
-                    <p className="mt-1">
-                      {Number(stats.total)} runs
-                      <br />
-                      <span className={
-                        stats.lastStatus === "succeeded"
-                          ? "text-emerald-400"
-                          : stats.lastStatus === "failed"
-                            ? "text-red-400"
-                            : stats.lastStatus === "awaiting_approval"
-                              ? "text-amber-400"
-                              : ""
-                      }>
+                    <div className="mt-2 space-y-0.5">
+                      <p>
+                        {Number(stats.week)} runs <span className="opacity-60">/ 7d</span>
+                      </p>
+                      <p>
+                        {Math.round(
+                          (Number(stats.successes) / Math.max(1, Number(stats.successes) + Number(stats.failures))) * 100
+                        )}
+                        % ok
+                      </p>
+                      {stats.medianDurationMs && (
+                        <p>
+                          {Math.round(Number(stats.medianDurationMs))}ms median
+                        </p>
+                      )}
+                      <p
+                        className={
+                          stats.lastStatus === "succeeded"
+                            ? "text-emerald-400"
+                            : stats.lastStatus === "failed"
+                              ? "text-red-400"
+                              : stats.lastStatus === "awaiting_approval"
+                                ? "text-amber-400"
+                                : ""
+                        }
+                      >
                         {stats.lastStatus ?? ""}
-                      </span>
-                    </p>
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>

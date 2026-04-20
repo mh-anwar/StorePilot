@@ -225,6 +225,11 @@ export const workflowRuns = pgTable(
       .notNull()
       .default({}),
     currentStep: integer("current_step").notNull().default(0),
+    // Frozen copy of the workflow's steps at the time the run was
+    // created. If a merchant edits the workflow while a run is mid-flight
+    // or later inspects history, this is the source of truth.
+    stepsSnapshot: jsonb("steps_snapshot").$type<WorkflowStep[]>(),
+    workflowVersion: integer("workflow_version"),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     error: text("error"),

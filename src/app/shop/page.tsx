@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
 import { eq, and, desc, ilike, or } from "drizzle-orm";
+import { DEMO_ORG_ID } from "@/lib/tenant";
 import { ProductCard } from "@/components/shop/product-card";
 import { LiveInventory } from "@/components/shop/live-inventory";
 
@@ -12,7 +13,12 @@ type SP = Promise<{ category?: string; q?: string; sort?: string }>;
 export default async function ShopPage({ searchParams }: { searchParams: SP }) {
   const { category, q, sort } = await searchParams;
 
-  const conds = [eq(products.status, "active" as const)];
+  // The public demo shop shows only the demo org's catalog, even when
+  // workflows are running against other orgs in the same DB.
+  const conds = [
+    eq(products.orgId, DEMO_ORG_ID),
+    eq(products.status, "active" as const),
+  ];
   if (category) conds.push(eq(products.category, category));
   if (q)
     conds.push(

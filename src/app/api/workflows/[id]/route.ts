@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { workflows } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getCurrentOrgId, getSession } from "@/lib/tenant";
 import { listStepTypes } from "@/lib/workflows/handlers";
 
@@ -43,6 +43,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (body?.trigger) patch.trigger = body.trigger;
   if (body?.steps) patch.steps = body.steps;
   if (body?.status) patch.status = body.status;
+  // Bump the workflow version when the executable definition changes
+  // so later runs can be pinned to the definition they executed against.
+  if (body?.trigger || body?.steps) {
+    patch.version = sql`${workflows.version} + 1` as unknown as number;
+  }
   await db
     .update(workflows)
     .set(patch)

@@ -30,6 +30,14 @@ export async function createRun(args: {
   actor?: string;
 }): Promise<string> {
   const id = "wr_" + nanoid(14);
+  // Freeze the workflow's steps at creation time so later edits don't
+  // retroactively change this run's behaviour. The executor reads
+  // stepsSnapshot first; if it's missing (legacy runs), it falls back
+  // to the live workflow.steps.
+  const [wf] = await db
+    .select({ steps: workflows.steps, version: workflows.version })
+    .from(workflows)
+    .where(eq(workflows.id, args.workflowId));
   await db.insert(workflowRuns).values({
     id,
     workflowId: args.workflowId,
@@ -37,6 +45,8 @@ export async function createRun(args: {
     status: "queued",
     triggerData: args.triggerData,
     context: { actor: args.actor ?? null },
+    stepsSnapshot: wf?.steps ?? null,
+    workflowVersion: wf?.version ?? null,
   });
   return id;
 }
@@ -76,7 +86,8 @@ export async function runWorkflow(runId: string): Promise<void> {
     actor: (run.context as { actor?: string })?.actor,
   };
 
-  const steps = wf.steps as WorkflowStep[];
+  // Prefer the snapshot so in-flight runs are insulated from edits.
+  const steps = (run.stepsSnapshot ?? wf.steps) as WorkflowStep[];
   for (let i = run.currentStep; i < steps.length; i++) {
     const step = steps[i];
     const handler = getHandler(step.type);
