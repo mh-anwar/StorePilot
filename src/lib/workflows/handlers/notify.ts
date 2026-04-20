@@ -19,7 +19,7 @@ registerStep("notify.email", {
       // Dry run: record it, don't fail.
       await recordAudit({
         orgId: ctx.orgId,
-        actor: `automation:${ctx.runId}` as never,
+        actor: `workflow:${ctx.runId}`,
         toolName: "notify.email",
         args: cfg,
         result: { dryRun: true, to, subject },

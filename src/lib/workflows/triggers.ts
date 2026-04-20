@@ -4,7 +4,7 @@
 //   runFromHttp(workflowId, body) → HTTP-triggered external runs
 //   runManual(workflowId, actor) → UI "Run now" button
 import { db } from "../db";
-import { workflows, webhookEvents } from "../db/schema";
+import { workflows, webhookEvents, shops } from "../db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { enqueue } from "../queue";
 import { createRun, runWorkflow } from "./executor";
@@ -26,12 +26,18 @@ export async function fanoutShopifyTrigger(args: {
     );
   const payload = event?.payload ?? {};
 
-  // JSONB containment match: trigger @> {type:'shopify', topic:X}
+  // CRITICAL: only fan out to workflows owned by the shop's org. A
+  // Shopify webhook for shop A must never trigger workflows owned by
+  // org B, even if both subscribe to the same topic.
+  const [shop] = await db.select().from(shops).where(eq(shops.id, args.shopId));
+  if (!shop) return;
+
   const matches = await db
     .select()
     .from(workflows)
     .where(
       and(
+        eq(workflows.orgId, shop.orgId),
         eq(workflows.status, "active"),
         sql`${workflows.trigger} @> ${JSON.stringify({ type: "shopify", topic: args.topic })}::jsonb`
       )

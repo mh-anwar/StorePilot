@@ -60,7 +60,7 @@ registerStep("store.update_inventory", {
       };
       await recordAudit({
         orgId: ctx.orgId,
-        actor: `automation:${ctx.runId}` as never,
+        actor: `workflow:${ctx.runId}`,
         toolName: "store.update_inventory",
         target: `product:${productId}`,
         args: cfg,
@@ -108,7 +108,7 @@ registerStep("store.update_price", {
     };
     await recordAudit({
       orgId: ctx.orgId,
-      actor: `automation:${ctx.runId}` as never,
+      actor: `workflow:${ctx.runId}`,
       toolName: "store.update_price",
       target: `product:${productId}`,
       args: cfg,
@@ -142,7 +142,7 @@ registerStep("store.create_discount", {
         .returning();
       await recordAudit({
         orgId: ctx.orgId,
-        actor: `automation:${ctx.runId}` as never,
+        actor: `workflow:${ctx.runId}`,
         toolName: "store.create_discount",
         args: cfg,
         result: { id: d.id, code: d.code },

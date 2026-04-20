@@ -107,8 +107,15 @@ export default async function ShopDetail({
             </thead>
             <tbody>
               {recentWebhooks.map((w) => (
-                <tr key={w.id} className="border-t border-border">
-                  <td className="px-4 py-2 font-mono text-xs">{w.topic}</td>
+                <tr key={w.id} className="border-t border-border hover:bg-muted/20">
+                  <td className="px-4 py-2 font-mono text-xs">
+                    <Link
+                      href={`/dashboard/shopify/${s.id}/webhooks/${w.id}`}
+                      className="hover:underline"
+                    >
+                      {w.topic}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {new Date(w.receivedAt).toLocaleString()}
                   </td>

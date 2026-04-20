@@ -7,7 +7,15 @@
 import { db } from "../db";
 import { auditLog } from "../db/schema";
 
-export type Actor = `agent:${string}` | `automation:${number}` | `user:${string}`;
+// Actor format: `<kind>:<id>`. Kind is the source of the write — an
+// explicit agent, a workflow run, an automation run, a signed-in user,
+// or the platform itself (for system/backfill writes).
+export type Actor =
+  | `agent:${string}`
+  | `workflow:${string}`
+  | `automation:${string}`
+  | `user:${string}`
+  | `system:${string}`;
 
 export async function recordAudit(args: {
   orgId: string;

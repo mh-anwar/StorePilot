@@ -212,7 +212,7 @@ export async function runWorkflow(runId: string): Promise<void> {
 
   await recordAudit({
     orgId: wf.orgId,
-    actor: "workflow" as never,
+    actor: `workflow:${runId}`,
     toolName: `workflow.run.${wf.name}`,
     target: wf.id,
     args: run.triggerData,

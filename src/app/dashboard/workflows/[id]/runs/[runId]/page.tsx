@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/schema";
 import { and, eq, asc } from "drizzle-orm";
 import { getCurrentOrgId } from "@/lib/tenant";
+import { CancelRunButton } from "@/components/dashboard/cancel-run-button";
 
 export const dynamic = "force-dynamic";
 
@@ -52,10 +53,17 @@ export default async function RunDetail({
         >
           ← Back to workflow
         </Link>
-        <h1 className="text-2xl font-bold mt-2">{wf.name}</h1>
-        <p className="text-sm text-muted-foreground font-mono">
-          run {run.id} · <StatusBadge status={run.status} />
-        </p>
+        <div className="mt-2 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold">{wf.name}</h1>
+            <p className="text-sm text-muted-foreground font-mono">
+              run {run.id} · <StatusBadge status={run.status} />
+            </p>
+          </div>
+          {(["queued", "running", "awaiting_approval"] as string[]).includes(
+            run.status
+          ) && <CancelRunButton runId={run.id} />}
+        </div>
       </div>
 
       {pendingProposals.length > 0 && (

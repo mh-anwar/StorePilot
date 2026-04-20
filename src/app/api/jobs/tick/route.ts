@@ -3,6 +3,7 @@ import { drainQueue } from "@/lib/queue";
 // Importing handlers registers them against the queue registry.
 import "@/lib/queue/handlers";
 import { fanoutSchedule } from "@/lib/workflows/triggers";
+import { expireOldProposals } from "@/lib/proposal-expiry";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,9 +20,11 @@ export async function GET(req: Request) {
   }
   // 1) Fan out schedule-triggered workflows whose interval is due.
   const scheduled = await fanoutSchedule();
-  // 2) Drain queued jobs (webhooks, syncs, workflow runs) in a batch.
+  // 2) Expire pending proposals that sat too long.
+  const { expired } = await expireOldProposals();
+  // 3) Drain queued jobs (webhooks, syncs, workflow runs) in a batch.
   const processed = await drainQueue(25);
-  return NextResponse.json({ ok: true, scheduled, processed });
+  return NextResponse.json({ ok: true, scheduled, expired, processed });
 }
 
 export const POST = GET;

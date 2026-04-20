@@ -33,7 +33,37 @@ export async function enqueue(
     .insert(jobs)
     .values({ kind, payload, runAt: options.runAt ?? new Date() })
     .returning({ id: jobs.id });
+  maybeAutoDrain();
   return row.id;
+}
+
+// Dev convenience: if AUTO_DRAIN_QUEUE is enabled (or we're in non-prod
+// and the user hasn't opted out with AUTO_DRAIN_QUEUE=0), drain a small
+// batch shortly after an enqueue. Lets a fresh-checkout developer watch
+// workflows fire without wiring a cron. Production deployments should
+// rely on a dedicated worker calling drainQueue() in a loop.
+let autoDrainScheduled = false;
+function maybeAutoDrain() {
+  const enabled =
+    process.env.AUTO_DRAIN_QUEUE === "1" ||
+    (process.env.NODE_ENV !== "production" &&
+      process.env.AUTO_DRAIN_QUEUE !== "0");
+  if (!enabled || autoDrainScheduled) return;
+  autoDrainScheduled = true;
+  setTimeout(async () => {
+    autoDrainScheduled = false;
+    try {
+      // Ensure handlers are registered (dynamic import avoids a circular
+      // static dep: queue → queue/handlers → workflow handlers → queue).
+      await import("./queue/handlers");
+      for (let i = 0; i < 5; i++) {
+        const processed = await drainQueue(10);
+        if (processed === 0) break;
+      }
+    } catch (e) {
+      console.error("auto-drain failed", (e as Error).message);
+    }
+  }, 200);
 }
 
 // Helpers for the common kinds so call sites don't stringly-type.
