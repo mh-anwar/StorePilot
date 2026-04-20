@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import { getCurrentOrgId } from "@/lib/tenant";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,9 +13,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
+  const orgId = await getCurrentOrgId();
   const allProducts = await db
     .select()
     .from(products)
+    .where(eq(products.orgId, orgId))
     .orderBy(desc(products.createdAt));
 
   return (

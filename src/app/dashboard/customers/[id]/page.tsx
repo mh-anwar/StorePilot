@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { customers, orders } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
+import { getCurrentOrgId } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +13,16 @@ export default async function CustomerDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [c] = await db.select().from(customers).where(eq(customers.id, Number(id)));
+  const orgId = await getCurrentOrgId();
+  const [c] = await db
+    .select()
+    .from(customers)
+    .where(and(eq(customers.id, Number(id)), eq(customers.orgId, orgId)));
   if (!c) notFound();
   const os = await db
     .select()
     .from(orders)
-    .where(eq(orders.customerId, c.id))
+    .where(and(eq(orders.customerId, c.id), eq(orders.orgId, orgId)))
     .orderBy(desc(orders.createdAt))
     .limit(50);
 

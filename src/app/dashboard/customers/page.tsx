@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { customers } from "@/lib/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { desc, sql, and, eq } from "drizzle-orm";
+import { getCurrentOrgId } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,17 @@ export default async function CustomersPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
+  const orgId = await getCurrentOrgId();
   const rows = await db
     .select()
     .from(customers)
     .where(
-      q
-        ? sql`(${customers.email} ILIKE ${"%" + q + "%"} OR ${customers.firstName} ILIKE ${"%" + q + "%"} OR ${customers.lastName} ILIKE ${"%" + q + "%"})`
-        : sql`true`
+      and(
+        eq(customers.orgId, orgId),
+        q
+          ? sql`(${customers.email} ILIKE ${"%" + q + "%"} OR ${customers.firstName} ILIKE ${"%" + q + "%"} OR ${customers.lastName} ILIKE ${"%" + q + "%"})`
+          : sql`true`
+      )
     )
     .orderBy(desc(customers.totalSpent))
     .limit(100);

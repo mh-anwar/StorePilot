@@ -1,11 +1,13 @@
 import { db } from "@/lib/db";
 import { reviews, products } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { ReviewsAdmin } from "@/components/dashboard/reviews-admin";
+import { getCurrentOrgId } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReviewsPage() {
+  const orgId = await getCurrentOrgId();
   const rows = await db
     .select({
       id: reviews.id,
@@ -21,6 +23,7 @@ export default async function ReviewsPage() {
     })
     .from(reviews)
     .innerJoin(products, eq(reviews.productId, products.id))
+    .where(and(eq(reviews.orgId, orgId), eq(products.orgId, orgId)))
     .orderBy(desc(reviews.createdAt))
     .limit(200);
 

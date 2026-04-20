@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
+  ArrowUp,
   Loader2,
   Play,
   Plus,
@@ -107,6 +108,15 @@ export function WorkflowEditor({
     });
   }
 
+  function moveStep(i: number, direction: -1 | 1) {
+    const j = i + direction;
+    if (j < 0 || j >= state.steps.length) return;
+    const next = [...state.steps];
+    const [s] = next.splice(i, 1);
+    next.splice(j, 0, s);
+    setState({ ...state, steps: next });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -173,6 +183,10 @@ export function WorkflowEditor({
             step={step}
             onChange={(p) => updateStep(i, p)}
             onRemove={() => removeStep(i)}
+            onMoveUp={i > 0 ? () => moveStep(i, -1) : null}
+            onMoveDown={
+              i < state.steps.length - 1 ? () => moveStep(i, 1) : null
+            }
             isLast={i === state.steps.length - 1}
           />
         ))}
@@ -253,15 +267,26 @@ function StepCard({
   step,
   onChange,
   onRemove,
+  onMoveUp,
+  onMoveDown,
   isLast,
 }: {
   index: number;
   step: Step;
   onChange: (patch: Partial<Step>) => void;
   onRemove: () => void;
+  onMoveUp: (() => void) | null;
+  onMoveDown: (() => void) | null;
   isLast: boolean;
 }) {
   const [open, setOpen] = useState(true);
+  // Track the raw text in the config textarea so users can type invalid
+  // JSON transiently without the editor snapping back. We only commit
+  // the parsed object to state when it parses cleanly.
+  const [rawConfig, setRawConfig] = useState(() =>
+    JSON.stringify(step.config, null, 2)
+  );
+  const [configErr, setConfigErr] = useState<string | null>(null);
   return (
     <>
       <div className="border border-border rounded-xl bg-card">
@@ -295,29 +320,56 @@ function StepCard({
               </span>
             )}
           </div>
-          <button
-            onClick={onRemove}
-            className="p-2 rounded hover:bg-muted text-red-400"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onMoveUp?.()}
+              disabled={!onMoveUp}
+              className="p-1.5 rounded hover:bg-muted disabled:opacity-30"
+              title="Move up"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onMoveDown?.()}
+              disabled={!onMoveDown}
+              className="p-1.5 rounded hover:bg-muted disabled:opacity-30"
+              title="Move down"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={onRemove}
+              className="p-2 rounded hover:bg-muted text-red-400"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         {open && (
           <div className="border-t border-border p-4 space-y-3">
             <label className="block">
               <span className="text-xs text-muted-foreground">Config (JSON)</span>
               <textarea
-                value={JSON.stringify(step.config, null, 2)}
+                value={rawConfig}
                 onChange={(e) => {
+                  setRawConfig(e.target.value);
                   try {
                     onChange({ config: JSON.parse(e.target.value) });
-                  } catch {
-                    /* ignore until valid */
+                    setConfigErr(null);
+                  } catch (err) {
+                    setConfigErr((err as Error).message);
                   }
                 }}
-                rows={Math.min(12, String(JSON.stringify(step.config, null, 2)).split("\n").length + 1)}
-                className="mt-1 w-full font-mono text-xs px-3 py-2 rounded bg-muted border border-border"
+                rows={Math.min(14, rawConfig.split("\n").length + 1)}
+                className={`mt-1 w-full font-mono text-xs px-3 py-2 rounded bg-muted border ${
+                  configErr ? "border-red-500" : "border-border"
+                }`}
               />
+              {configErr && (
+                <p className="text-xs text-red-400 mt-1 font-mono">
+                  {configErr}
+                </p>
+              )}
             </label>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm">
@@ -448,6 +500,33 @@ function defaultConfigFor(type: string): Record<string, unknown> {
       };
     case "delay.sleep":
       return { seconds: 60 };
+    case "store.refund_order":
+      return { orderId: "{{trigger.payload.id}}", notify: true, note: "auto-refund" };
+    case "store.fulfill_order":
+      return { orderId: "{{trigger.payload.id}}", status: "shipped" };
+    case "store.fetch_customer":
+      return { customerId: "{{trigger.payload.customer.id}}" };
+    case "store.top_sellers":
+      return { days: 30 };
+    case "llm.draft_email_reply":
+      return {
+        context: "Customer complained about a delayed order.",
+        tone: "apologetic, concise",
+        signer: "The team",
+      };
+    case "llm.summarize_run":
+      return {};
+    case "llm.extract":
+      return {
+        input: "{{trigger.payload.message}}",
+        output: {
+          type: "object",
+          properties: {
+            intent: { type: "string", description: "what the customer wants" },
+            urgency: { type: "string", description: "low/medium/high" },
+          },
+        },
+      };
   }
   return {};
 }

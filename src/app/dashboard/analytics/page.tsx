@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { orders, orderItems, products, analyticsEvents } from "@/lib/db/schema";
-import { sql, eq, desc, sum, count } from "drizzle-orm";
+import { sql, eq, desc, sum, count, and } from "drizzle-orm";
+import { getCurrentOrgId } from "@/lib/tenant";
+void analyticsEvents;
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+  const orgId = await getCurrentOrgId();
 
   const [dailyRevenue, categoryBreakdown, trafficSources, conversionFunnel] =
     await Promise.all([
@@ -18,7 +21,8 @@ export default async function AnalyticsPage() {
           SUM(total::numeric) AS revenue,
           COUNT(*) AS orders
         FROM orders
-        WHERE created_at >= ${sixtyDaysAgo.toISOString()}::timestamptz
+        WHERE org_id = ${orgId}
+          AND created_at >= ${sixtyDaysAgo.toISOString()}::timestamptz
           AND status NOT IN ('cancelled', 'refunded')
         GROUP BY 1
         ORDER BY 1
@@ -33,7 +37,13 @@ export default async function AnalyticsPage() {
         .from(orderItems)
         .innerJoin(orders, eq(orderItems.orderId, orders.id))
         .innerJoin(products, eq(orderItems.productId, products.id))
-        .where(sql`${orders.status} NOT IN ('cancelled', 'refunded')`)
+        .where(
+          and(
+            eq(orders.orgId, orgId),
+            eq(products.orgId, orgId),
+            sql`${orders.status} NOT IN ('cancelled', 'refunded')`
+          )
+        )
         .groupBy(products.category)
         .orderBy(desc(sum(orderItems.totalPrice))),
       db.execute(sql`
@@ -41,19 +51,23 @@ export default async function AnalyticsPage() {
           COALESCE(utm_source, 'direct') AS source,
           COUNT(DISTINCT session_id) AS sessions,
           COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchases
-        FROM analytics_events
-        WHERE created_at >= ${sixtyDaysAgo.toISOString()}::timestamptz
+        FROM analytics_events ae
+        JOIN orders o ON o.id = ae.order_id
+        WHERE o.org_id = ${orgId}
+          AND ae.created_at >= ${sixtyDaysAgo.toISOString()}::timestamptz
         GROUP BY 1
         ORDER BY sessions DESC
         LIMIT 8
       `),
       db.execute(sql`
         SELECT
-          event_type,
+          ae.event_type,
           COUNT(*) AS event_count,
-          COUNT(DISTINCT session_id) AS unique_sessions
-        FROM analytics_events
-        WHERE created_at >= ${sixtyDaysAgo.toISOString()}::timestamptz
+          COUNT(DISTINCT ae.session_id) AS unique_sessions
+        FROM analytics_events ae
+        LEFT JOIN orders o ON o.id = ae.order_id
+        WHERE ae.created_at >= ${sixtyDaysAgo.toISOString()}::timestamptz
+          AND (o.org_id = ${orgId} OR o.org_id IS NULL)
         GROUP BY 1
         ORDER BY event_count DESC
       `),

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { orders, customers } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
+import { getCurrentOrgId } from "@/lib/tenant";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -16,6 +17,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default async function OrdersPage() {
+  const orgId = await getCurrentOrgId();
   const allOrders = await db
     .select({
       id: orders.id,
@@ -29,8 +31,10 @@ export default async function OrdersPage() {
     })
     .from(orders)
     .innerJoin(customers, eq(orders.customerId, customers.id))
+    .where(eq(orders.orgId, orgId))
     .orderBy(desc(orders.createdAt))
     .limit(100);
+  void and;
 
   return (
     <div className="space-y-6">

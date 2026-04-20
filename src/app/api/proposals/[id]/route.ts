@@ -6,16 +6,19 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { proposals, workflowRuns, workflows } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { getCurrentOrgId, getSession } from "@/lib/tenant";
+import { getSession } from "@/lib/tenant";
 import { resumeAfterProposal } from "@/lib/workflows/executor";
 import { getHandler } from "@/lib/workflows/registry";
 import "@/lib/workflows/handlers";
 import type { StepResult } from "@/lib/workflows/types";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const { id } = await ctx.params;
-  const orgId = await getCurrentOrgId();
   const session = await getSession();
+  if (!session?.activeOrgId) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const orgId = session.activeOrgId;
+  const { id } = await ctx.params;
   const body = await req.json().catch(() => null);
   const decision = body?.decision as "approve" | "reject" | undefined;
   if (decision !== "approve" && decision !== "reject") {

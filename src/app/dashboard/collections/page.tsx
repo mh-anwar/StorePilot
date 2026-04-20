@@ -1,14 +1,17 @@
 import { db } from "@/lib/db";
 import { collections, products, productCollections } from "@/lib/db/schema";
-import { desc, asc, sql } from "drizzle-orm";
+import { desc, asc, sql, eq } from "drizzle-orm";
 import { CollectionsAdmin } from "@/components/dashboard/collections-admin";
+import { getCurrentOrgId } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 
 export default async function CollectionsPage() {
+  const orgId = await getCurrentOrgId();
   const rows = await db
     .select()
     .from(collections)
+    .where(eq(collections.orgId, orgId))
     .orderBy(asc(collections.sortOrder), desc(collections.createdAt));
   const counts = await db
     .select({
@@ -16,6 +19,8 @@ export default async function CollectionsPage() {
       count: sql<number>`count(*)`,
     })
     .from(productCollections)
+    .innerJoin(collections, eq(productCollections.collectionId, collections.id))
+    .where(eq(collections.orgId, orgId))
     .groupBy(productCollections.collectionId);
   const map = new Map<number, number>();
   for (const c of counts) map.set(c.collectionId, Number(c.count));
@@ -23,6 +28,7 @@ export default async function CollectionsPage() {
   const allProducts = await db
     .select({ id: products.id, name: products.name, slug: products.slug })
     .from(products)
+    .where(eq(products.orgId, orgId))
     .orderBy(products.name);
 
   return (

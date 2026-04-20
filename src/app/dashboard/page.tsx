@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { orders, orderItems, products } from "@/lib/db/schema";
-import { sql, gte, count, sum, avg, eq, desc } from "drizzle-orm";
+import { sql, gte, count, sum, avg, eq, desc, and } from "drizzle-orm";
+import { getCurrentOrgId } from "@/lib/tenant";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { TopProductsTable } from "@/components/dashboard/top-products-table";
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const orgId = await getCurrentOrgId();
 
   const [revenueStats, lowStock, topProducts, recentOrders, dailyRevenue] =
     await Promise.all([
@@ -29,13 +31,19 @@ export default async function DashboardPage() {
         })
         .from(orders)
         .where(
-          sql`${orders.createdAt} >= ${thirtyDaysAgo.toISOString()}::timestamptz AND ${orders.status} NOT IN ('cancelled', 'refunded')`
+          and(
+            eq(orders.orgId, orgId),
+            sql`${orders.createdAt} >= ${thirtyDaysAgo.toISOString()}::timestamptz AND ${orders.status} NOT IN ('cancelled', 'refunded')`
+          )
         ),
       db
         .select({ count: count() })
         .from(products)
         .where(
-          sql`${products.stock} <= ${products.lowStockThreshold} AND ${products.status} = 'active'`
+          and(
+            eq(products.orgId, orgId),
+            sql`${products.stock} <= ${products.lowStockThreshold} AND ${products.status} = 'active'`
+          )
         ),
       db
         .select({
@@ -46,7 +54,10 @@ export default async function DashboardPage() {
         .from(orderItems)
         .innerJoin(orders, eq(orderItems.orderId, orders.id))
         .where(
-          sql`${orders.status} NOT IN ('cancelled', 'refunded')`
+          and(
+            eq(orders.orgId, orgId),
+            sql`${orders.status} NOT IN ('cancelled', 'refunded')`
+          )
         )
         .groupBy(orderItems.productName)
         .orderBy(desc(sum(orderItems.totalPrice)))
@@ -59,6 +70,7 @@ export default async function DashboardPage() {
           createdAt: orders.createdAt,
         })
         .from(orders)
+        .where(eq(orders.orgId, orgId))
         .orderBy(desc(orders.createdAt))
         .limit(8),
       db.execute(sql`
@@ -67,12 +79,14 @@ export default async function DashboardPage() {
           SUM(total::numeric) AS revenue,
           COUNT(*) AS orders
         FROM orders
-        WHERE created_at >= ${thirtyDaysAgo.toISOString()}::timestamptz
+        WHERE org_id = ${orgId}
+          AND created_at >= ${thirtyDaysAgo.toISOString()}::timestamptz
           AND status NOT IN ('cancelled', 'refunded')
         GROUP BY 1
         ORDER BY 1
       `),
     ]);
+  void gte;
 
   const revenue = parseFloat(revenueStats[0].totalRevenue || "0");
   const avgOV = parseFloat(revenueStats[0].avgOrderValue || "0");

@@ -1,14 +1,17 @@
 import { db } from "@/lib/db";
 import { discounts } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { DiscountsAdmin } from "@/components/dashboard/discounts-admin";
+import { getCurrentOrgId } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 
 export default async function DiscountsPage() {
+  const orgId = await getCurrentOrgId();
   const rows = await db
     .select()
     .from(discounts)
+    .where(eq(discounts.orgId, orgId))
     .orderBy(desc(discounts.createdAt));
 
   return (
