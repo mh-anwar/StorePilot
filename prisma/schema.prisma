@@ -1,0 +1,154 @@
+// StorePilot data model. SQLite by default; strings hold JSON because SQLite
+// has no native JSON column in Prisma.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model Shop {
+  id            String    @id @default(cuid())
+  domain        String    @unique
+  name          String?
+  email         String?
+  currencyCode  String    @default("USD")
+  plan          String    @default("free") // free | growth | pro
+  isDemo        Boolean   @default(false)
+  installedAt   DateTime  @default(now())
+  uninstalledAt DateTime?
+  lastSyncedAt  DateTime?
+
+  // Merchant settings
+  refundPolicy        String?
+  shippingPolicy      String?
+  supportEmail        String?
+  autoDraft           Boolean @default(true)
+  minFightAmountCents Int     @default(2000)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  disputes     Dispute[]
+  activities   Activity[]
+  usage        UsageCounter[]
+}
+
+model Dispute {
+  id         String  @id @default(cuid())
+  shopId     String
+  shop       Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopifyId  String  // gid://shopify/ShopifyPaymentsDispute/123
+  evidenceId String? // gid://shopify/ShopifyPaymentsDisputeEvidence/123
+  orderId    String? // gid://shopify/Order/123
+  orderName  String?
+  customerId String? // gid://shopify/Customer/123, used for GDPR redaction
+
+  type              String // CHARGEBACK | INQUIRY
+  status            String // NEEDS_RESPONSE | UNDER_REVIEW | CHARGE_REFUNDED | ACCEPTED | WON | LOST
+  reason            String // ShopifyPaymentsDisputeReason
+  networkReasonCode String?
+  amountCents       Int
+  currencyCode      String
+  initiatedAt       DateTime
+  evidenceDueBy     DateTime?
+  evidenceSentOn    DateTime?
+  finalizedOn       DateTime?
+
+  // Evidence pack: JSON OrderSnapshot (contains customer PII) and its assessment
+  snapshot        String?
+  snapshotAt      DateTime?
+  score           Int?
+  recommendation  String? // FIGHT | ACCEPT | REVIEW
+  assessment      String? // JSON Assessment
+  decision        String? // merchant's call: FIGHT | ACCEPT
+  redactedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  drafts     EvidenceDraft[]
+  activities Activity[]
+
+  @@unique([shopId, shopifyId])
+  @@index([shopId, status])
+  @@index([shopId, customerId])
+}
+
+model EvidenceDraft {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  version   Int
+  source    String   // AI | TEMPLATE | MERCHANT
+  model     String?
+  fields    String   // JSON EvidenceFields
+  savedToShopifyAt DateTime?
+  submittedAt      DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([disputeId, version])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  disputeId String?
+  dispute   Dispute? @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  kind      String   // synced | pack_built | drafted | edited | saved | submitted | decided | outcome | plan_changed | gdpr
+  message   String
+  actor     String?  // "system" or staff email
+  meta      String?  // JSON
+  createdAt DateTime @default(now())
+
+  @@index([shopId, createdAt])
+}
+
+model UsageCounter {
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  period String // YYYY-MM (UTC)
+  packs  Int    @default(0)
+
+  @@id([shopId, period])
+}
+
+// Privacy compliance requests received from Shopify. Kept without customer PII
+// beyond the ids Shopify sent, so we can show merchants what was handled.
+model GdprRequest {
+  id          String    @id @default(cuid())
+  shopDomain  String
+  topic       String    // customers/data_request | customers/redact | shop/redact
+  customerId  String?
+  payload     String    // JSON as received, minus customer contact details
+  status      String    @default("received") // received | completed
+  result      String?   // JSON summary (e.g. disputes redacted, export)
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([shopDomain, topic])
+}
