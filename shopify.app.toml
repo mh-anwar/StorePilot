@@ -1,0 +1,45 @@
+# StorePilot app configuration.
+# `shopify app config link` fills in client_id and application_url for your Partner app.
+# See docs/INSTALL.md.
+client_id = ""
+name = "StorePilot"
+application_url = "https://example.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[access_scopes]
+# Keep this list minimal. Every scope is justified in docs/INSTALL.md.
+scopes = "read_orders,read_customers,read_legal_policies,read_shopify_payments_disputes,read_shopify_payments_dispute_evidences,write_shopify_payments_dispute_evidences"
+
+[auth]
+redirect_urls = [ "https://example.com/auth/callback" ]
+
+[pos]
+embedded = false
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "disputes/create", "disputes/update" ]
+  uri = "/webhooks/disputes"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app_subscriptions/update" ]
+  uri = "/webhooks/app_subscriptions/update"
+
+  # Mandatory privacy compliance webhooks (required for App Store apps).
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  uri = "/webhooks/compliance"

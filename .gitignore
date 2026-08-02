@@ -1,48 +1,38 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+node_modules
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
 .DS_Store
-*.pem
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+/.cache
+/build
+/app/build
+/public/build/
+/public/_dev
+/app/public/build
+/prisma/*.sqlite
+/prisma/*.sqlite-journal
+/data
+database.sqlite
 
-# env files
 .env
-.env.local
-.env.production.local
-.env.development.local
+.env.*
+!.env.example
 
-# vercel
-.vercel
+package-lock.json
+yarn.lock
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+/coverage
+/test-results
+/playwright-report
 
-# Personal handoff notes — not committed
+/extensions/*/dist
+
+# Shopify CLI
+.shopify/*
+.shopify.lock
+
+# React Router generated types
+.react-router/
+
+# Personal handoff notes
 .brain/
 BRAIN.md
