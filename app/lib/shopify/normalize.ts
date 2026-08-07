@@ -38,6 +38,7 @@ interface RawAddress {
   address2?: Maybe<string>;
   city?: Maybe<string>;
   province?: Maybe<string>;
+  provinceCode?: Maybe<string>;
   zip?: Maybe<string>;
   country?: Maybe<string>;
   countryCodeV2?: Maybe<string>;
@@ -190,6 +191,7 @@ function address(raw: Maybe<RawAddress>): Address | null {
     address2: raw.address2 ?? null,
     city: raw.city ?? null,
     province: raw.province ?? null,
+    provinceCode: raw.provinceCode ?? null,
     zip: raw.zip ?? null,
     country: raw.country ?? null,
     countryCode: raw.countryCodeV2 ?? null,

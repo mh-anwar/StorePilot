@@ -58,8 +58,8 @@ export const ORDER_EVIDENCE_QUERY = `#graphql
         numberOfOrders
         amountSpent { amount currencyCode }
       }
-      billingAddress { name address1 address2 city province zip country countryCodeV2 }
-      shippingAddress { name address1 address2 city province zip country countryCodeV2 }
+      billingAddress { name address1 address2 city province provinceCode zip country countryCodeV2 }
+      shippingAddress { name address1 address2 city province provinceCode zip country countryCodeV2 }
       lineItems(first: 50) {
         nodes {
           title

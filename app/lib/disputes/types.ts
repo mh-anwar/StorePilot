@@ -52,6 +52,7 @@ export interface Address {
   address2?: string | null;
   city?: string | null;
   province?: string | null;
+  provinceCode?: string | null;
   zip?: string | null;
   country?: string | null;
   countryCode?: string | null;
