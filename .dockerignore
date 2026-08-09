@@ -1,3 +1,13 @@
-.cache
-build
 node_modules
+build
+.cache
+.react-router
+.git
+.env
+.env.*
+!.env.example
+prisma/*.sqlite*
+coverage
+test-results
+docs/screenshots
+.shopify

@@ -1,0 +1,44 @@
+# StorePilot Fly.io config.
+#
+# BEFORE DEPLOYING:
+# 1. Change `app` below to your own Fly app name (must be globally unique).
+# 2. Set secrets (do NOT put them here — they belong in Fly's secret store):
+#      fly secrets set SHOPIFY_API_KEY=... SHOPIFY_API_SECRET=... \
+#        SHOPIFY_APP_URL=https://<your-app>.fly.dev ANTHROPIC_API_KEY=...
+#
+# SQLite lives on a single mounted volume, so exactly ONE machine may run.
+# The single default machine is in primary_region and has min_machines_running=1.
+
+app = "storepilot" # TODO: change to your unique app name
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3000"
+  NODE_ENV = "production"
+  DATABASE_URL = "file:/data/storepilot.sqlite"
+  BILLING_TEST_MODE = "true"
+
+[[mounts]]
+  source = "storepilot_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  # Webhooks (e.g. app/uninstalled) must always be answerable.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
