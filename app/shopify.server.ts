@@ -9,6 +9,7 @@ import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prism
 import prisma from "./db.server";
 import { PLAN_GROWTH, PLAN_PRO } from "./lib/billing/plan-names";
 import { onInstalled } from "./lib/shop.server";
+import { fromShopifyAdmin } from "./lib/shopify/admin-client";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -35,7 +36,7 @@ const shopify = shopifyApp({
   },
   hooks: {
     afterAuth: async ({ session, admin }) => {
-      await onInstalled(session.shop, admin);
+      await onInstalled(session.shop, fromShopifyAdmin(admin));
     },
   },
   future: {
