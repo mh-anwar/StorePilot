@@ -5,10 +5,10 @@ import type { DisputeReason, EvidenceItem } from "../../app/lib/disputes/types";
 
 const now = new Date("2026-07-15T00:00:00Z");
 describe("verification codes", () => {
-  it.each([
-    ...["Y", "X", "D", "F", "M", " y "].map(c => [c, "full"]),
-    ...["A", "B", "P", "W", "Z"].map(c => [c, "partial"]),
-    ...["N", "C"].map(c => [c, "none"]),
+  it.each<[string | null | undefined, string]>([
+    ...["Y", "X", "D", "F", "M", " y "].map((c): [string, string] => [c, "full"]),
+    ...["A", "B", "P", "W", "Z"].map((c): [string, string] => [c, "partial"]),
+    ...["N", "C"].map((c): [string, string] => [c, "none"]),
     [null, "unknown"], [undefined, "unknown"], ["?", "unknown"],
   ])("AVS %s -> %s", (code, result) => expect(avsMatch(code)).toBe(result));
   it.each([["M", "match"], [" m ", "match"], ["N", "no_match"], [null, "unknown"], [undefined, "unknown"], ["P", "unknown"]])("CVV %s -> %s", (code, result) => expect(cvvMatch(code)).toBe(result));
