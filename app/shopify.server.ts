@@ -11,12 +11,24 @@ import { PLAN_GROWTH, PLAN_PRO } from "./lib/billing/plan-names";
 import { onInstalled } from "./lib/shop.server";
 import { fromShopifyAdmin } from "./lib/shopify/admin-client";
 
+// Without Partner app credentials the server still boots so /demo, /privacy
+// and /healthz work (screenshots, a public demo, a first deploy before the
+// app exists). Embedded routes need the real values; see docs/INSTALL.md.
+export const shopifyConfigured = Boolean(
+  process.env.SHOPIFY_API_KEY && process.env.SHOPIFY_API_SECRET && process.env.SHOPIFY_APP_URL,
+);
+if (!shopifyConfigured) {
+  console.warn(
+    "[storepilot] SHOPIFY_API_KEY, SHOPIFY_API_SECRET or SHOPIFY_APP_URL is not set: only /demo, /privacy and /healthz will work.",
+  );
+}
+
 const shopify = shopifyApp({
-  apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
+  apiKey: process.env.SHOPIFY_API_KEY || "not-configured",
+  apiSecretKey: process.env.SHOPIFY_API_SECRET || "not-configured",
   apiVersion: ApiVersion.October26,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL || "",
+  appUrl: process.env.SHOPIFY_APP_URL || "http://localhost:3000",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,

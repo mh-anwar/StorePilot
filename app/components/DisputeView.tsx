@@ -132,7 +132,8 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
         <Flash result={fetcher.data} />
         <StatusBanner data={data} />
 
-        <s-grid gridTemplateColumns="@container (inline-size > 800px) 2fr 1fr, 1fr" gap="base">
+        <s-query-container>
+        <s-grid gridTemplateColumns="@container (inline-size > 860px) 2fr 1fr, 1fr" gap="base">
           <s-stack gap="base">
             {/* Recommendation */}
             <s-section heading="Recommendation">
@@ -328,6 +329,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
             ) : null}
           </s-stack>
         </s-grid>
+        </s-query-container>
       </s-stack>
     </s-page>
   );

@@ -143,13 +143,15 @@ function order(now: Date, s: OrderSpec): RawOrder {
             displayStatus: s.fulfillment.status ?? (s.fulfillment.delivered != null ? "DELIVERED" : "IN_TRANSIT"),
             createdAt: iso(now, s.fulfillment.shipped, 21),
             deliveredAt: s.fulfillment.delivered != null ? iso(now, s.fulfillment.delivered, 17) : null,
-            trackingInfo: [
-              {
-                company: s.fulfillment.carrier,
-                number: s.fulfillment.number,
-                url: trackingUrl(s.fulfillment.carrier, s.fulfillment.number),
-              },
-            ],
+            trackingInfo: s.fulfillment.number
+              ? [
+                  {
+                    company: s.fulfillment.carrier,
+                    number: s.fulfillment.number,
+                    url: trackingUrl(s.fulfillment.carrier, s.fulfillment.number),
+                  },
+                ]
+              : [],
           },
         ]
       : [],
@@ -172,7 +174,8 @@ const SPECS: OrderSpec[] = [
     fulfillment: { shipped: -8, delivered: null, carrier: "USPS", number: "9400111899223197451210", status: "IN_TRANSIT" } },
   { n: 38, person: "ana", placed: -31, avs: "Y", cvv: "M", ip: "198.51.100.61",
     items: [{ title: "Granite Rain Shell", variant: "Women's S / Ember", sku: "GRS-WS-EMB", price: "264.00" }],
-    fulfillment: { shipped: -30, delivered: -27, carrier: "UPS", number: "1Z84A9E70391877203" } },
+    // Shipped with an untracked label: the case rests on the product and the refund policy.
+    fulfillment: { shipped: -30, delivered: null, carrier: "USPS", number: "", status: "FULFILLED" } },
   { n: 35, person: "sam", placed: -34, avs: "Y", cvv: "M", ip: "192.0.2.18",
     items: [{ title: "Trekking Poles (pair)", sku: "TP-AL", price: "119.00" }],
     fulfillment: { shipped: -33, delivered: -29, carrier: "USPS", number: "9400111899223196602177" },

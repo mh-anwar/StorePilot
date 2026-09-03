@@ -53,13 +53,12 @@ async function seedDemo(admin: MockShopifyAdmin): Promise<StoreContext> {
   const ctx: StoreContext = { shop, admin, actor: "demo@storepilot.app", isDemo: true };
   ctx.shop = await refreshShopDetails(shop, admin);
   await syncDisputes(ctx);
-  // Make the inbox look lived in: packs for most open disputes, drafts for two.
+  // Make the inbox look lived in: packs for the open disputes, drafts for two.
   const open = await prisma.dispute.findMany({
     where: { shopId: shop.id, status: "NEEDS_RESPONSE" },
     orderBy: { evidenceDueBy: "asc" },
   });
   for (const [i, d] of open.entries()) {
-    if (i >= 6) break;
     await buildPack(ctx, d.id);
     if (i < 2) await draftEvidence(ctx, d.id);
   }

@@ -37,11 +37,9 @@ function Stat({ label, value, detail, tone }: { label: string; value: string; de
     <s-box padding="base" background="base" border="base" borderRadius="base">
       <s-stack gap="small-200">
         <s-text color="subdued">{label}</s-text>
-        <s-heading>
-          <s-text tone={tone} fontVariantNumeric="tabular-nums">
-            {value}
-          </s-text>
-        </s-heading>
+        <s-text tone={tone} fontSize="large-100" fontWeight="bold" fontVariantNumeric="tabular-nums">
+          {value}
+        </s-text>
         {detail ? <s-text color="subdued">{detail}</s-text> : null}
       </s-stack>
     </s-box>

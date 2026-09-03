@@ -23,6 +23,10 @@ import {
 } from "./records.server";
 import type { EvidenceFields, OrderSnapshot } from "./types";
 
+function label(row: Dispute) {
+  return row.orderName ?? "Dispute";
+}
+
 async function getDispute(ctx: StoreContext, disputeId: string): Promise<Dispute> {
   const row = await prisma.dispute.findFirst({ where: { id: disputeId, shopId: ctx.shop.id } });
   if (!row) throw new UserFacingError("That dispute doesn't exist in this store.");
@@ -82,7 +86,7 @@ export async function buildPack(ctx: StoreContext, disputeId: string) {
   await logActivity(
     ctx.shop.id,
     "pack_built",
-    `Evidence pack ${firstBuild ? "built" : "rebuilt"}: ${assessment.score}/100, recommend ${assessment.recommendation.toLowerCase()}.`,
+    `${label(updated)}: evidence pack ${firstBuild ? "built" : "rebuilt"}, ${assessment.score}/100, recommend ${assessment.recommendation === "REVIEW" ? "a closer look" : assessment.recommendation.toLowerCase()}.`,
     { disputeId: row.id, actor: ctx.actor },
   );
   return { dispute: updated, snapshot, assessment };
@@ -120,7 +124,9 @@ export async function draftEvidence(ctx: StoreContext, disputeId: string) {
   await logActivity(
     ctx.shop.id,
     "drafted",
-    draft.source === "AI" ? `Claude drafted response v${draft.version} (${draft.model}).` : `Template drafted response v${draft.version}.`,
+    draft.source === "AI"
+      ? `${label(row)}: Claude drafted response v${draft.version} (${draft.model}).`
+      : `${label(row)}: response v${draft.version} drafted from the template.`,
     { disputeId: row.id, actor: ctx.actor },
   );
   return draft;
@@ -138,7 +144,7 @@ export async function saveEdits(ctx: StoreContext, disputeId: string, fields: Ev
   const { _notes, ...withoutNotes } = currentFields;
   if (current && sameFields(withoutNotes, fields)) return current;
   const draft = await createDraft(row.id, "MERCHANT", fields, { notes: _notes });
-  await logActivity(ctx.shop.id, "edited", `Response edited (v${draft.version}).`, { disputeId: row.id, actor: ctx.actor });
+  await logActivity(ctx.shop.id, "edited", `${label(row)}: response edited (v${draft.version}).`, { disputeId: row.id, actor: ctx.actor });
   return draft;
 }
 
@@ -192,11 +198,11 @@ export async function sendToShopify(
     await logActivity(
       ctx.shop.id,
       "submitted",
-      `Response v${draft.version} submitted to the bank for ${formatMoney(row.amountCents, row.currencyCode)}.`,
+      `${label(row)}: response v${draft.version} submitted to the bank for ${formatMoney(row.amountCents, row.currencyCode)}.`,
       { disputeId: row.id, actor: ctx.actor },
     );
   } else {
-    await logActivity(ctx.shop.id, "saved", `Response v${draft.version} saved to Shopify (not submitted).`, {
+    await logActivity(ctx.shop.id, "saved", `${label(row)}: response v${draft.version} saved to Shopify (not submitted).`, {
       disputeId: row.id,
       actor: ctx.actor,
     });
@@ -216,11 +222,12 @@ export async function decide(ctx: StoreContext, disputeId: string, decision: "FI
   await logActivity(
     ctx.shop.id,
     "decided",
-    decision === "ACCEPT"
-      ? "Marked as accepted: StorePilot won't respond, and the dispute will close when the deadline passes."
+    `${label(row)}: ` +
+    (decision === "ACCEPT"
+      ? "marked as accepted: StorePilot won't respond, and the dispute will close when the deadline passes."
       : decision === "FIGHT"
-        ? "Marked to fight."
-        : "Decision cleared.",
+        ? "marked to fight."
+        : "decision cleared."),
     { disputeId: row.id, actor: ctx.actor },
   );
 }
