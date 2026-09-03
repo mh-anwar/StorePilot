@@ -104,7 +104,9 @@ export async function draftEvidence(ctx: StoreContext, disputeId: string) {
     supportEmail: ctx.shop.supportEmail,
   };
   const plan = planFor(ctx.shop.plan);
-  const model = plan.aiDrafts ? modelForPlan(plan.key) : null;
+  // The public demo never spends the operator's Anthropic credits unless asked to.
+  const aiAllowed = plan.aiDrafts && (!ctx.isDemo || process.env.DEMO_AI === "on");
+  const model = aiAllowed ? modelForPlan(plan.key) : null;
   let draft;
   if (model && aiAvailable()) {
     const ai = await draftWithClaude(draftCtx, model);
