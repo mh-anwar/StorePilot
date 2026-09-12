@@ -58,7 +58,11 @@ export async function buildPack(ctx: StoreContext, disputeId: string) {
   }
 
   const rawOrder = await fetchOrder(ctx.admin, row.orderId);
-  if (!rawOrder) throw new UserFacingError(`Order ${row.orderName ?? row.orderId} is no longer available in Shopify.`);
+  if (!rawOrder) {
+    throw new UserFacingError(
+      `Shopify didn't return order ${row.orderName ?? row.orderId}. Orders older than 60 days need the read_all_orders scope (see docs/INSTALL.md).`,
+    );
+  }
   let storePolicies: OrderSnapshot["policies"] | undefined;
   try {
     storePolicies = policiesFromShop(await fetchShop(ctx.admin));

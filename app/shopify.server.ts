@@ -3,6 +3,7 @@ import {
   ApiVersion,
   AppDistribution,
   BillingInterval,
+  DeliveryMethod,
   shopifyApp,
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
@@ -14,8 +15,16 @@ import { fromShopifyAdmin } from "./lib/shopify/admin-client";
 // Without Partner app credentials the server still boots so /demo, /privacy
 // and /healthz work (screenshots, a public demo, a first deploy before the
 // app exists). Embedded routes need the real values; see docs/INSTALL.md.
+//
+// The public URL is detected on Render and Fly, so a fresh deploy only needs
+// the client id and secret.
+export const appUrl =
+  process.env.SHOPIFY_APP_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
+  (process.env.FLY_APP_NAME ? `https://${process.env.FLY_APP_NAME}.fly.dev` : "");
+
 export const shopifyConfigured = Boolean(
-  process.env.SHOPIFY_API_KEY && process.env.SHOPIFY_API_SECRET && process.env.SHOPIFY_APP_URL,
+  process.env.SHOPIFY_API_KEY && process.env.SHOPIFY_API_SECRET && appUrl,
 );
 if (!shopifyConfigured) {
   console.warn(
@@ -23,12 +32,15 @@ if (!shopifyConfigured) {
   );
 }
 
+export const DEFAULT_SCOPES =
+  "read_orders,read_customers,read_legal_policies,read_shopify_payments_disputes,read_shopify_payments_dispute_evidences,write_shopify_payments_dispute_evidences";
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY || "not-configured",
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "not-configured",
   apiVersion: ApiVersion.October26,
-  scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL || "http://localhost:3000",
+  scopes: (process.env.SCOPES || DEFAULT_SCOPES).split(","),
+  appUrl: appUrl || "http://localhost:3000",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
@@ -46,8 +58,28 @@ const shopify = shopifyApp({
       ],
     },
   },
+  // Also declared in shopify.app.toml. Registering them over the API on every
+  // install means an app created by hand in the Dev Dashboard (no CLI deploy)
+  // still gets its webhooks. Handlers are idempotent, so a duplicate delivery
+  // from both registrations is harmless.
+  webhooks: {
+    DISPUTES_CREATE: { deliveryMethod: DeliveryMethod.Http, callbackUrl: "/webhooks/disputes" },
+    DISPUTES_UPDATE: { deliveryMethod: DeliveryMethod.Http, callbackUrl: "/webhooks/disputes" },
+    APP_UNINSTALLED: { deliveryMethod: DeliveryMethod.Http, callbackUrl: "/webhooks/app/uninstalled" },
+    APP_SUBSCRIPTIONS_UPDATE: {
+      deliveryMethod: DeliveryMethod.Http,
+      callbackUrl: "/webhooks/app_subscriptions/update",
+    },
+  },
   hooks: {
     afterAuth: async ({ session, admin }) => {
+      if (process.env.REGISTER_WEBHOOKS !== "off") {
+        try {
+          await shopify.registerWebhooks({ session });
+        } catch (error) {
+          console.error(`[install] webhook registration failed for ${session.shop}`, error);
+        }
+      }
       await onInstalled(session.shop, fromShopifyAdmin(admin));
     },
   },
