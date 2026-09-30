@@ -10,7 +10,7 @@ WORKDIR /app
 RUN corepack enable
 
 # Install all deps (incl. dev) so the build can run.
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
 
 # Build the app.
@@ -27,7 +27,7 @@ RUN apk add --no-cache openssl
 RUN corepack enable
 
 # Copy the lockfile + package.json, install only production deps, then prune.
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile --prod && pnpm prune --prod
 
 # Prisma needs the schema and migrations for `prisma generate` / `migrate deploy`.
