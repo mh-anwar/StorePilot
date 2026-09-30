@@ -25,26 +25,33 @@ export function demoEnabled(): boolean {
 /** Demo data older than this is thrown away so deadlines stay in the future. */
 const MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
-export async function demoContext(): Promise<StoreContext> {
+/**
+ * The layout and page loaders ask for the demo at the same time, so the
+ * check-reset-seed sequence runs one caller at a time.
+ */
+export function demoContext(): Promise<StoreContext> {
   if (!demoEnabled()) throw new Response("Demo is disabled on this server", { status: 404 });
+  inflight ??= ensureDemo().finally(() => {
+    inflight = null;
+  });
+  return inflight;
+}
+
+let inflight: Promise<StoreContext> | null = null;
+
+async function ensureDemo(): Promise<StoreContext> {
   let shop = await prisma.shop.findUnique({ where: { domain: DEMO_SHOP_DOMAIN } });
   const hasState = Boolean(g.__storepilotDemo);
   if (shop && (!hasState || Date.now() - shop.installedAt.getTime() > MAX_AGE_MS)) {
     // The process restarted (mock state is gone) or the data is stale.
-    await prisma.shop.delete({ where: { id: shop.id } });
+    await prisma.shop.deleteMany({ where: { domain: DEMO_SHOP_DOMAIN } });
     g.__storepilotDemo = undefined;
     shop = null;
   }
   const { admin } = state();
   if (shop) return { shop, admin, actor: "demo@storepilot.app", isDemo: true };
-  // Two first requests at once must not both seed.
-  seeding ??= seedDemo(admin).finally(() => {
-    seeding = null;
-  });
-  return seeding;
+  return seedDemo(admin);
 }
-
-let seeding: Promise<StoreContext> | null = null;
 
 async function seedDemo(admin: MockShopifyAdmin): Promise<StoreContext> {
   const shop = await prisma.shop.create({

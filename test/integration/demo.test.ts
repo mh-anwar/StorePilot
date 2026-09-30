@@ -43,3 +43,11 @@ it("plays a full loop: new dispute, submit, bank decides", async () => {
   const decided = await prisma.dispute.findUniqueOrThrow({ where: { id } });
   expect(decided.status).toBe("WON");
 });
+
+it("recovers when the process restarted but old demo rows are still in the database", async () => {
+  await prisma.shop.create({ data: { domain: "storepilot-demo.myshopify.com", isDemo: true } });
+  (globalThis as { __storepilotDemo?: unknown }).__storepilotDemo = undefined;
+  const ctxs = await Promise.all([demoContext(), demoContext(), demoContext()]);
+  expect(new Set(ctxs.map((c) => c.shop.id)).size).toBe(1);
+  expect(await prisma.dispute.count()).toBe(10);
+});
