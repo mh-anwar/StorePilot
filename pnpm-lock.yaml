@@ -14,9 +14,6 @@ importers:
       '@prisma/client':
         specifier: ^6.19.3
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
-      '@react-router/dev':
-        specifier: 7.18.2
-        version: 7.18.2(@react-router/serve@7.18.2(react-router@7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3))(@types/node@22.20.5)(jiti@2.7.0)(react-router@7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tsx@4.23.15)(typescript@5.9.3)(vite@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(yaml@2.9.1)
       '@react-router/fs-routes':
         specifier: 7.18.2
         version: 7.18.2(@react-router/dev@7.18.2(@react-router/serve@7.18.2(react-router@7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3))(@types/node@22.20.5)(jiti@2.7.0)(react-router@7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tsx@4.23.15)(typescript@5.9.3)(vite@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(yaml@2.9.1))(typescript@5.9.3)
@@ -50,13 +47,13 @@ importers:
       react-router:
         specifier: 7.18.2
         version: 7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      vite-tsconfig-paths:
-        specifier: ^6.1.1
-        version: 6.1.1(typescript@5.9.3)(vite@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       zod:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@react-router/dev':
+        specifier: 7.18.2
+        version: 7.18.2(@react-router/serve@7.18.2(react-router@7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.9.3))(@types/node@22.20.5)(jiti@2.7.0)(react-router@7.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tsx@4.23.15)(typescript@5.9.3)(vite@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(yaml@2.9.1)
       '@shopify/api-codegen-preset':
         specifier: ^3.0.1
         version: 3.0.1(@types/node@22.20.5)(typescript@5.9.3)
@@ -96,6 +93,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^7.1.1
         version: 7.1.1(eslint@8.57.1)
+      playwright-core:
+        specifier: ^1.65.1
+        version: 1.65.1
       prettier:
         specifier: ^3.10.1
         version: 3.10.1
@@ -108,6 +108,9 @@ importers:
       vite:
         specifier: ^7.3.8
         version: 7.3.8(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+      vite-tsconfig-paths:
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(vite@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -3096,6 +3099,11 @@ packages:
 
   pkg-types@2.4.0:
     resolution: {integrity: sha512-07Fys7iVx0X6TcviMOgogM1Lk33ZyqOezMnU79S+kffWqwolG/5W9V8EgQSeYCIfFTYVgssRbnH630Oa2+soBA==}
+
+  playwright-core@1.65.1:
+    resolution: {integrity: sha512-hqPpz7blSMPxWVdoeE1yiBSzXsKiVOd2k+kjCvmUywD2GPO2Dd9HfcWnq9NN0GHbNZDFgZ9JfBFr+X5/BLo0qw==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -7131,6 +7139,8 @@ snapshots:
       confbox: 0.3.2
       exsolve: 1.2.0
       pathe: 2.0.3
+
+  playwright-core@1.65.1: {}
 
   possible-typed-array-names@1.1.0: {}
 
