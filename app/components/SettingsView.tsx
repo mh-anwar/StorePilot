@@ -67,7 +67,7 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
         <s-section heading="Policies quoted in responses">
           <s-stack gap="base">
             <s-paragraph color="subdued">
-              Loaded from your store's published policies. Edit them here if the bank should see a shorter or more
+              Loaded from your store&apos;s published policies. Edit them here if the bank should see a shorter or more
               specific version.
             </s-paragraph>
             <s-text-area label="Refund policy" rows={5} value={form.refundPolicy} onInput={set("refundPolicy")} />

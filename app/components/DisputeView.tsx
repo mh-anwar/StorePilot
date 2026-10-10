@@ -1,7 +1,7 @@
 // Dispute detail: the recommendation, the evidence pack, the response editor
 // and the history. Nothing reaches the bank until the merchant confirms.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useFetcher } from "react-router";
 import type { ActionResult } from "../lib/action-result";
 import { FIELD_LABELS, TEXT_FIELDS } from "../lib/disputes/evidence-input";
@@ -93,10 +93,13 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
   const pending = fetcher.formData?.get("intent");
 
   // A new version arrived (drafted, saved, submitted): load it into the editor.
-  useEffect(() => {
+  // Adjusting state during render is React's recommended pattern for this.
+  const [loadedId, setLoadedId] = useState(latest?.id);
+  if (latest?.id !== loadedId) {
+    setLoadedId(latest?.id);
     setFields(textFields(latest));
     setConfirming(false);
-  }, [latest?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   const dirty = useMemo(() => JSON.stringify(fields) !== JSON.stringify(textFields(latest)), [fields, latest]);
   const visible = useMemo(() => {
@@ -306,7 +309,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                     </s-button>
                   ) : (
                     <s-button tone="critical" variant="tertiary" loading={busy && pending === "accept"} onClick={() => run("accept")}>
-                      Accept the chargeback (don't fight)
+                      Accept the chargeback (don&apos;t fight)
                     </s-button>
                   )}
                 </s-box>

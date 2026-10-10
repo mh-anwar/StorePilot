@@ -1,12 +1,12 @@
 // The public demo: the same screens as the embedded app, outside Shopify
 // admin, on a seeded store with a mocked Admin API.
-import type { LoaderFunctionArgs, MetaFunction } from "react-router";
+import type { MetaFunction } from "react-router";
 import { Form, Outlet, useLoaderData, useLocation } from "react-router";
 import { demoContext } from "../lib/demo/demo.server";
 
 export const meta: MetaFunction = () => [{ title: "StorePilot demo" }];
 
-export const loader = async (_args: LoaderFunctionArgs) => {
+export const loader = async () => {
   const ctx = await demoContext();
   return { shopName: ctx.shop.name ?? ctx.shop.domain, plan: ctx.shop.plan };
 };

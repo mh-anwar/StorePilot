@@ -29,7 +29,7 @@ export function PlansView({ data, base }: { data: PlansData; base: string }) {
           funds.
         </s-paragraph>
         {data.testMode && !data.isDemo ? (
-          <s-banner tone="info">Billing is in test mode: approving a plan won't charge the store.</s-banner>
+          <s-banner tone="info">Billing is in test mode: approving a plan won&apos;t charge the store.</s-banner>
         ) : null}
         <s-grid gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))" gap="base">
           {ORDER.map((key) => {

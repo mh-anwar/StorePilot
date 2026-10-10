@@ -1,6 +1,6 @@
 // Plans in the demo switch instantly; the embedded app goes through Shopify's
 // approval page instead (see app.billing.tsx).
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import type { ActionFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { PlansView } from "../components/PlansView";
 import type { ActionResult } from "../lib/action-result";
@@ -9,7 +9,7 @@ import { PLANS, type PlanKey } from "../lib/billing/plans";
 import { packsUsed } from "../lib/disputes/records.server";
 import { demoContext } from "../lib/demo/demo.server";
 
-export const loader = async (_args: LoaderFunctionArgs) => {
+export const loader = async () => {
   const ctx = await demoContext();
   return { current: ctx.shop.plan as PlanKey, packsUsed: await packsUsed(ctx.shop.id), testMode: true, isDemo: true };
 };

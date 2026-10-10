@@ -15,7 +15,7 @@ export class AdminApiError extends Error {
 
 export interface AdminClient {
   /** Runs a query or mutation and returns `data`. Throws AdminApiError on GraphQL errors. */
-  graphql<T = any>(query: string, variables?: Record<string, unknown>): Promise<T>;
+  graphql<T = unknown>(query: string, variables?: Record<string, unknown>): Promise<T>;
 }
 
 /** Minimal shape of the library's admin context we rely on. */

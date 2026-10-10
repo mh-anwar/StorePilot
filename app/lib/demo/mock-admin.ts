@@ -44,7 +44,7 @@ export class MockShopifyAdmin implements AdminClient {
     }
   }
 
-  async graphql<T = any>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+  async graphql<T = unknown>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
     const operation = /(?:query|mutation)\s+(\w+)/.exec(query)?.[1] ?? "anonymous";
     this.calls.push({ operation, variables: clone(variables) });
     return this.execute(operation, variables) as T;
