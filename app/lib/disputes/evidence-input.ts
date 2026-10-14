@@ -47,12 +47,14 @@ export function mailingAddress(a: Address): MailingAddressInput {
   return out;
 }
 
+/**
+ * disputeEvidenceUpdate is a partial update, so every text field is sent:
+ * an empty string clears a value an earlier "Save to Shopify" stored.
+ * Otherwise text the merchant deleted could still reach the bank.
+ */
 export function evidenceUpdateInput(fields: EvidenceFields, submit: boolean) {
   const input: Record<string, unknown> = {};
-  for (const key of TEXT_FIELDS) {
-    const value = fields[key]?.trim();
-    if (value) input[key] = value;
-  }
+  for (const key of TEXT_FIELDS) input[key] = fields[key]?.trim() ?? "";
   if (fields.shippingAddress) {
     const addr = mailingAddress(fields.shippingAddress);
     if (Object.keys(addr).length) input.shippingAddress = addr;
