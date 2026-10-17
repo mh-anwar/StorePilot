@@ -80,6 +80,8 @@ export async function detailAction(ctx: StoreContext, id: string, request: Reque
       case "save":
       case "save_shopify":
       case "submit": {
+        const owned = await prisma.dispute.findFirst({ where: { id, shopId: ctx.shop.id }, select: { id: true } });
+        if (!owned) return { ok: false, error: "That dispute doesn't exist in this store." };
         const current = await latestDraft(id);
         const base = current ? draftView(current).fields : {};
         const fields = fieldsFromForm(form, base);

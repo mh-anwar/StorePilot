@@ -33,6 +33,13 @@ async function getDispute(ctx: StoreContext, disputeId: string): Promise<Dispute
   return row;
 }
 
+/** Every write goes through here: a dispute whose customer data was erased stays read-only. */
+async function getWritableDispute(ctx: StoreContext, disputeId: string): Promise<Dispute> {
+  const row = await getDispute(ctx, disputeId);
+  if (row.redactedAt) throw new UserFacingError("The customer's data on this dispute was erased at their request.");
+  return row;
+}
+
 function policiesFor(ctx: StoreContext, fromStore: OrderSnapshot["policies"] | undefined) {
   return {
     refund: ctx.shop.refundPolicy ?? fromStore?.refund ?? null,
@@ -98,7 +105,7 @@ export async function buildPack(ctx: StoreContext, disputeId: string) {
 
 /** Writes a new draft version. Claude when the plan and an API key allow it, otherwise the template. */
 export async function draftEvidence(ctx: StoreContext, disputeId: string) {
-  let row = await getDispute(ctx, disputeId);
+  let row = await getWritableDispute(ctx, disputeId);
   if (!row.snapshot) row = (await buildPack(ctx, disputeId)).dispute;
   const snapshot = snapshotOf(row);
   const assessment = assessmentOf(row);
@@ -142,7 +149,7 @@ function sameFields(a: EvidenceFields, b: EvidenceFields) {
 
 /** Saves the merchant's edits as a new version if anything changed. */
 export async function saveEdits(ctx: StoreContext, disputeId: string, fields: EvidenceFields) {
-  const row = await getDispute(ctx, disputeId);
+  const row = await getWritableDispute(ctx, disputeId);
   const current = await latestDraft(row.id);
   const currentFields = current ? (JSON.parse(current.fields) as EvidenceFields & { _notes?: string[] }) : {};
   const { _notes, ...withoutNotes } = currentFields;
@@ -168,7 +175,7 @@ export async function sendToShopify(
   fields: EvidenceFields,
   opts: { submit: boolean },
 ): Promise<SendResult> {
-  const row = await getDispute(ctx, disputeId);
+  const row = await getWritableDispute(ctx, disputeId);
   if (!row.evidenceId) throw new UserFacingError("Shopify hasn't opened an evidence form for this dispute yet. Sync and try again.");
   if (row.evidenceSentOn) throw new UserFacingError("Evidence for this dispute was already submitted.");
   if (row.status !== "NEEDS_RESPONSE") throw new UserFacingError("This dispute no longer accepts a response.");
@@ -187,6 +194,13 @@ export async function sendToShopify(
       actor: ctx.actor,
     });
     throw new UserFacingError(`Shopify rejected the evidence: ${result.errors.join("; ")}`);
+  }
+  if (opts.submit && !result.submitted) {
+    // Saved, but Shopify didn't confirm the submission: don't mark it as sent.
+    await prisma.evidenceDraft.update({ where: { id: draft.id }, data: { savedToShopifyAt: new Date() } });
+    throw new UserFacingError(
+      "Shopify saved the evidence but didn't confirm it was submitted. Check the dispute in your Shopify admin before trying again.",
+    );
   }
 
   const now = new Date();
@@ -220,7 +234,7 @@ export async function sendToShopify(
  * nagging, and it can be reversed until the deadline.
  */
 export async function decide(ctx: StoreContext, disputeId: string, decision: "FIGHT" | "ACCEPT" | null) {
-  const row = await getDispute(ctx, disputeId);
+  const row = await getWritableDispute(ctx, disputeId);
   if (row.evidenceSentOn) throw new UserFacingError("Evidence was already submitted for this dispute.");
   await prisma.dispute.update({ where: { id: row.id }, data: { decision } });
   await logActivity(
