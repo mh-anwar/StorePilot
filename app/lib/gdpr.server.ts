@@ -5,8 +5,8 @@
 import type { Dispute } from "@prisma/client";
 import prisma from "../db.server";
 import { logActivity } from "./context.server";
-import { draftView, snapshotOf } from "./disputes/records.server";
-import type { OrderSnapshot } from "./disputes/types";
+import { assessmentOf, draftView, snapshotOf } from "./disputes/records.server";
+import type { Assessment, OrderSnapshot } from "./disputes/types";
 
 export type ComplianceTopic = "CUSTOMERS_DATA_REQUEST" | "CUSTOMERS_REDACT" | "SHOP_REDACT";
 
@@ -89,7 +89,17 @@ export function scrubSnapshot(s: OrderSnapshot): OrderSnapshot {
     billingAddress: null,
     shippingAddress: null,
     payment: { ...s.payment, browserIp: null },
+    // Tracking numbers lead back to an address; refund notes are free text.
+    fulfillments: s.fulfillments.map((f) => ({ ...f, trackingNumber: null, trackingUrl: null })),
+    refunds: s.refunds.map((r) => ({ ...r, note: null })),
   };
+}
+
+const ERASED = "Erased on the customer's request.";
+
+/** Keeps the score and recommendation, drops the per-item details (they quote the IP, tracking and so on). */
+export function scrubAssessment(a: Assessment): Assessment {
+  return { ...a, checklist: a.checklist.map((item) => ({ ...item, detail: ERASED })) };
 }
 
 export async function handleCustomerRedact(shopDomain: string, payload: CustomerPayload) {
@@ -97,10 +107,12 @@ export async function handleCustomerRedact(shopDomain: string, payload: Customer
   const now = new Date();
   for (const d of disputes) {
     const snapshot = snapshotOf(d);
+    const assessment = assessmentOf(d);
     await prisma.dispute.update({
       where: { id: d.id },
       data: {
         snapshot: snapshot ? JSON.stringify(scrubSnapshot(snapshot)) : null,
+        assessment: assessment ? JSON.stringify(scrubAssessment(assessment)) : null,
         redactedAt: now,
       },
     });
@@ -108,6 +120,13 @@ export async function handleCustomerRedact(shopDomain: string, payload: Customer
     await prisma.evidenceDraft.updateMany({
       where: { disputeId: d.id },
       data: { fields: JSON.stringify({ _notes: ["Content erased on the customer's request."] }) },
+    });
+  }
+  // An earlier data-request export is a full copy of what we just erased.
+  if (payload.customer?.id != null) {
+    await prisma.gdprRequest.updateMany({
+      where: { shopDomain, topic: "customers/data_request", customerId: String(payload.customer.id) },
+      data: { result: JSON.stringify({ erased: true, note: ERASED }) },
     });
   }
   await prisma.gdprRequest.create({
