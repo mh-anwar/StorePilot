@@ -48,11 +48,17 @@ export async function upsertDispute(ctx: StoreContext, remote: RemoteDispute): P
     return { row, created: true, statusChanged: false, previousStatus: null };
   }
   // Webhook payloads don't carry the evidence id or order name; never blank
-  // out what an earlier GraphQL read filled in.
+  // out what an earlier GraphQL read filled in. Deliveries can also arrive
+  // late and out of order: an old "needs response" must not reopen a dispute
+  // we already submitted.
+  const submitted = Boolean(existing.evidenceSentOn);
+  const regressed = submitted && data.status === "NEEDS_RESPONSE";
   const row = await prisma.dispute.update({
     where: { id: existing.id },
     data: {
       ...data,
+      status: regressed ? existing.status : data.status,
+      evidenceSentOn: data.evidenceSentOn ?? existing.evidenceSentOn,
       evidenceId: data.evidenceId ?? existing.evidenceId,
       orderId: data.orderId ?? existing.orderId,
       orderName: data.orderName ?? existing.orderName,
