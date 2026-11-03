@@ -8,5 +8,7 @@ export const loader = async () => settingsLoader(await demoContext());
 export const action = async ({ request }: ActionFunctionArgs) => settingsAction(await demoContext(), request);
 
 export default function DemoSettings() {
-  return <SettingsView data={useLoaderData<typeof loader>()} base="/demo" />;
+  const data = useLoaderData<typeof loader>();
+  // Remount when the saved settings change so the form shows them (e.g. after reloading policies).
+  return <SettingsView key={JSON.stringify(data.shop)} data={data} base="/demo" />;
 }

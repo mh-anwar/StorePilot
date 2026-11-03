@@ -89,6 +89,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
   const [fields, setFields] = useState<Fields>(() => textFields(latest));
   const [showAll, setShowAll] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [confirmRedraft, setConfirmRedraft] = useState(false);
   const busy = fetcher.state !== "idle";
   const pending = fetcher.formData?.get("intent");
 
@@ -99,6 +100,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
     setLoadedId(latest?.id);
     setFields(textFields(latest));
     setConfirming(false);
+    setConfirmRedraft(false);
   }
 
   const dirty = useMemo(() => JSON.stringify(fields) !== JSON.stringify(textFields(latest)), [fields, latest]);
@@ -220,7 +222,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                       name={key}
                       rows={key === "uncategorizedText" ? 14 : 4}
                       value={fields[key] ?? ""}
-                      readOnly={!editable}
+                      readOnly={!editable || busy}
                       maxLength={key === "uncategorizedText" ? 4500 : 2000}
                       onInput={(e) => {
                         const value = e.currentTarget.value;
@@ -236,7 +238,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                         label={FIELD_LABELS[key]}
                         name={key}
                         value={fields[key] ?? ""}
-                        readOnly={!editable}
+                        readOnly={!editable || busy}
                         onInput={(e) => {
                           const value = e.currentTarget.value;
                           setFields((f) => ({ ...f, [key]: value }));
@@ -249,6 +251,16 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                     <s-stack gap="base">
                       {!showAll ? (
                         <s-link onClick={() => setShowAll(true)}>Show every evidence field</s-link>
+                      ) : null}
+                      {confirmRedraft ? (
+                        <s-banner tone="warning" heading="Redraft and lose your unsaved edits?">
+                          <s-stack direction="inline" gap="small-200">
+                            <s-button onClick={() => run("draft")}>Redraft anyway</s-button>
+                            <s-button variant="primary" onClick={() => { setConfirmRedraft(false); run("save", true); }}>
+                              Save my edits instead
+                            </s-button>
+                          </s-stack>
+                        </s-banner>
                       ) : null}
                       {confirming ? (
                         <s-banner tone="critical" heading="Submit this response to the bank?">
@@ -275,7 +287,11 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                           <s-button disabled={!dirty} loading={busy && pending === "save"} onClick={() => run("save", true)}>
                             Save draft
                           </s-button>
-                          <s-button variant="tertiary" loading={busy && pending === "draft"} onClick={() => run("draft")}>
+                          <s-button
+                            variant="tertiary"
+                            loading={busy && pending === "draft"}
+                            onClick={() => (dirty ? setConfirmRedraft(true) : run("draft"))}
+                          >
                             Redraft
                           </s-button>
                         </s-stack>

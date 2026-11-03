@@ -16,7 +16,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Settings() {
-  return <SettingsView data={useLoaderData<typeof loader>()} base="/app" />;
+  const data = useLoaderData<typeof loader>();
+  // Remount when the saved settings change so the form shows them (e.g. after reloading policies).
+  return <SettingsView key={JSON.stringify(data.shop)} data={data} base="/app" />;
 }
 
 export const headers: HeadersFunction = (headersArgs) => boundary.headers(headersArgs);
