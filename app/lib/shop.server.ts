@@ -2,6 +2,7 @@
 
 import type { Shop } from "@prisma/client";
 import prisma from "../db.server";
+import { DEMO_SHOP_DOMAIN } from "./demo/fixtures";
 import { logActivity, type StoreContext } from "./context.server";
 import { syncDisputes } from "./disputes/sync.server";
 import type { AdminClient } from "./shopify/admin-client";
@@ -9,6 +10,8 @@ import { fetchShop } from "./shopify/api.server";
 import { policiesFromShop } from "./shopify/normalize";
 
 export async function ensureShop(domain: string, opts: { isDemo?: boolean } = {}): Promise<Shop> {
+  // The public demo owns this domain; a real store must never share its rows.
+  if (domain === DEMO_SHOP_DOMAIN && !opts.isDemo) throw new Error("Reserved demo shop domain");
   return prisma.shop.upsert({
     where: { domain },
     create: { domain, isDemo: opts.isDemo ?? false },

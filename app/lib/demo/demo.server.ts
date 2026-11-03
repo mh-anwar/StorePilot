@@ -41,6 +41,7 @@ let inflight: Promise<StoreContext> | null = null;
 
 async function ensureDemo(): Promise<StoreContext> {
   let shop = await prisma.shop.findUnique({ where: { domain: DEMO_SHOP_DOMAIN } });
+  if (shop && !shop.isDemo) throw new Response("Demo unavailable", { status: 404 });
   const hasState = Boolean(g.__storepilotDemo);
   if (shop && (!hasState || Date.now() - shop.installedAt.getTime() > MAX_AGE_MS)) {
     // The process restarted (mock state is gone) or the data is stale.
