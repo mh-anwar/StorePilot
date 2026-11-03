@@ -110,6 +110,15 @@ export const SHOP_QUERY = `#graphql
   }
 `;
 
+// No scope needed: an app can always read its own subscriptions.
+export const ACTIVE_SUBSCRIPTIONS_QUERY = `#graphql
+  query StorePilotActiveSubscriptions {
+    currentAppInstallation {
+      activeSubscriptions { id name status }
+    }
+  }
+`;
+
 export const DISPUTE_EVIDENCE_UPDATE = `#graphql
   mutation StorePilotEvidenceUpdate($id: ID!, $input: ShopifyPaymentsDisputeEvidenceUpdateInput!) {
     disputeEvidenceUpdate(id: $id, input: $input) {

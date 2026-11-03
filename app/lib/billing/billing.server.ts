@@ -5,6 +5,8 @@
 import type { Shop } from "@prisma/client";
 import prisma from "../../db.server";
 import { logActivity } from "../context.server";
+import type { AdminClient } from "../shopify/admin-client";
+import { ACTIVE_SUBSCRIPTIONS_QUERY } from "../shopify/queries";
 import { PLANS, planKeyFromName, type PlanKey } from "./plans";
 
 export interface SubscriptionLike {
@@ -45,6 +47,20 @@ export async function handleSubscriptionWebhook(shopDomain: string, payload: App
   // Cancelled, declined, expired or frozen: only downgrade if it's the plan we think they're on.
   if (shop.plan === key) return setPlan(shop, "free");
   return shop;
+}
+
+/**
+ * Subscription webhooks can arrive late and out of order (an old plan's
+ * CANCELLED after the new plan is ACTIVE), so when we can reach the Admin API
+ * we ask Shopify what is active right now instead of trusting the event.
+ */
+export async function syncPlanFromShopify(shopDomain: string, admin: AdminClient) {
+  const shop = await prisma.shop.findUnique({ where: { domain: shopDomain } });
+  if (!shop) return null;
+  const data = await admin.graphql<{
+    currentAppInstallation: { activeSubscriptions: SubscriptionLike[] };
+  }>(ACTIVE_SUBSCRIPTIONS_QUERY);
+  return setPlan(shop, planFromSubscriptions(data.currentAppInstallation.activeSubscriptions));
 }
 
 export function billingTestMode(): boolean {
