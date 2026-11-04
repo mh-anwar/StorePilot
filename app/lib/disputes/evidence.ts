@@ -350,7 +350,15 @@ export function assess(
   const pastDue = d.evidenceDueBy ? new Date(d.evidenceDueBy) < now : false;
   const refunded = s.refunds.reduce((sum, r) => sum + r.amountCents, 0);
 
-  if (d.reason === "CREDIT_NOT_PROCESSED" && refunded >= d.amountCents && refunded > 0) {
+  const neverShipped =
+    s.lineItems.some((li) => li.requiresShipping) && !s.fulfillments.some((f) => f.status !== "CANCELLED");
+
+  if (d.reason === "PRODUCT_NOT_RECEIVED" && neverShipped) {
+    recommendation = "ACCEPT";
+    reasons.push(
+      "The order was never fulfilled, so there is no delivery to prove. Banks side with the cardholder here; ship it or refund instead.",
+    );
+  } else if (d.reason === "CREDIT_NOT_PROCESSED" && refunded >= d.amountCents && refunded > 0) {
     recommendation = "FIGHT";
     reasons.push("You already refunded this order, which is exactly what the cardholder says didn't happen.");
   } else if (score >= FIGHT_THRESHOLD) {

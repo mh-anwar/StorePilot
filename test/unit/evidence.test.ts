@@ -31,9 +31,13 @@ it.each<[DisputeReason, string[]]>([
 it("fights delivered orders", () => {
   expect(assess(makeDispute(), makeSnapshot(), { now }).recommendation).toBe("FIGHT");
 });
-// Source bug: non-delivery evidence alone reaches REVIEW for an unfulfilled order.
-it.fails("accepts an unfulfilled PRODUCT_NOT_RECEIVED order", () => {
-  expect(assess(makeDispute(), makeSnapshot({ fulfillments: [] }), { now }).recommendation).toBe("ACCEPT");
+it("accepts an unfulfilled PRODUCT_NOT_RECEIVED order", () => {
+  const result = assess(makeDispute(), makeSnapshot({ fulfillments: [] }), { now });
+  expect(result.recommendation).toBe("ACCEPT");
+  expect(result.reasons[0]).toMatch(/never fulfilled/);
+});
+it("still treats an unfulfilled inquiry as worth answering", () => {
+  expect(assess(makeDispute({ type: "INQUIRY" }), makeSnapshot({ fulfillments: [] }), { now }).recommendation).toBe("REVIEW");
 });
 it("accepts fraud with failed checks and a new customer", () => {
   const s = makeSnapshot();
