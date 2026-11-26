@@ -41,6 +41,8 @@ model Shop {
   installedAt   DateTime  @default(now())
   uninstalledAt DateTime?
   lastSyncedAt  DateTime?
+  // When the merchant hid the first-run setup guide on the home page.
+  setupDismissedAt DateTime?
 
   // Merchant settings
   refundPolicy        String?

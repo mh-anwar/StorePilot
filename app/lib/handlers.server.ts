@@ -34,6 +34,14 @@ export async function inboxLoader(ctx: StoreContext, request: Request) {
     stats,
     rows,
     activity,
+    setup: {
+      lastSyncedAt: ctx.shop.lastSyncedAt?.toISOString() ?? null,
+      supportEmail: ctx.shop.supportEmail,
+      refundPolicy: ctx.shop.refundPolicy,
+      shippingPolicy: ctx.shop.shippingPolicy,
+      plan: planFor(ctx.shop.plan).key,
+      setupDismissedAt: ctx.shop.setupDismissedAt?.toISOString() ?? null,
+    },
     isDemo: ctx.isDemo,
   };
 }
@@ -45,6 +53,13 @@ export async function inboxAction(ctx: StoreContext, request: Request): Promise<
     if (intent === "sync") {
       const r = await syncDisputes(ctx);
       return { ok: true, message: `Synced ${r.total} disputes (${r.created} new, ${r.updated} changed).` };
+    }
+    if (intent === "dismiss_setup" || intent === "show_setup") {
+      ctx.shop = await prisma.shop.update({
+        where: { id: ctx.shop.id },
+        data: { setupDismissedAt: intent === "dismiss_setup" ? new Date() : null },
+      });
+      return { ok: true, message: intent === "dismiss_setup" ? "Setup guide hidden." : "Setup guide restored." };
     }
     return { ok: false, error: "Unknown action." };
   } catch (error) {

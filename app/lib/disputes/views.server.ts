@@ -74,6 +74,9 @@ export interface DashboardStats {
   atStakeCents: number; // open amount
   recoveredCents: number; // won amount
   lostCents: number;
+  /** Lost disputes that never got a response: the money StorePilot exists to save. */
+  unanswered: number;
+  unansweredCents: number;
   won: number;
   lost: number;
   winRate: number | null; // 0..100, of decided disputes
@@ -85,10 +88,11 @@ export interface DashboardStats {
 export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats> {
   const rows = await prisma.dispute.findMany({
     where: { shopId: ctx.shop.id },
-    select: { status: true, amountCents: true, evidenceDueBy: true, decision: true },
+    select: { status: true, amountCents: true, evidenceDueBy: true, decision: true, evidenceSentOn: true },
   });
   const now = new Date();
   let open = 0, dueSoon = 0, atStake = 0, recovered = 0, lostCents = 0, won = 0, lost = 0;
+  let unanswered = 0, unansweredCents = 0;
   for (const r of rows) {
     if (r.status === "NEEDS_RESPONSE") {
       open++;
@@ -101,6 +105,10 @@ export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats>
     } else if (r.status === "LOST") {
       lost++;
       lostCents += r.amountCents;
+      if (!r.evidenceSentOn) {
+        unanswered++;
+        unansweredCents += r.amountCents;
+      }
     }
   }
   const plan = planFor(ctx.shop.plan);
@@ -112,6 +120,8 @@ export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats>
     atStakeCents: atStake,
     recoveredCents: recovered,
     lostCents,
+    unanswered,
+    unansweredCents,
     won,
     lost,
     winRate: won + lost ? Math.round((won / (won + lost)) * 100) : null,

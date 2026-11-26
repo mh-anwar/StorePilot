@@ -4,7 +4,9 @@
 import { useFetcher } from "react-router";
 import type { ActionResult } from "../lib/action-result";
 import type { DashboardStats, InboxRow, InboxTab } from "../lib/disputes/views.server";
+import { setupGuide, type SetupInput } from "../lib/onboarding";
 import { Flash } from "./Flash";
+import { SetupGuide } from "./SetupGuide";
 import {
   dueLabel,
   formatMoney,
@@ -22,6 +24,7 @@ export interface InboxData {
   stats: DashboardStats;
   rows: InboxRow[];
   activity: Array<{ id: string; kind: string; message: string; disputeId: string | null; createdAt: string }>;
+  setup: SetupInput;
   isDemo: boolean;
 }
 
@@ -50,7 +53,9 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
   const fetcher = useFetcher<ActionResult>();
   const { stats, rows, tab } = data;
   const cur = stats.currencyCode;
-  const syncing = fetcher.state !== "idle";
+  const syncing = fetcher.state !== "idle" && fetcher.formData?.get("intent") === "sync";
+  const guide = setupGuide(data.setup, base);
+  const noDisputesYet = stats.open + stats.won + stats.lost === 0 && rows.length === 0 && tab === "open";
 
   return (
     <s-page heading="Disputes" inlineSize="large">
@@ -65,9 +70,21 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
       <s-button slot="secondary-actions" href={`${base}/settings`}>
         Settings
       </s-button>
+      {!guide.visible && guide.completed < guide.total ? (
+        <s-button slot="secondary-actions" onClick={() => fetcher.submit({ intent: "show_setup" }, { method: "post" })}>
+          Setup guide
+        </s-button>
+      ) : null}
 
       <s-stack gap="base">
         <Flash result={fetcher.data} />
+        {guide.visible ? <SetupGuide guide={guide} /> : null}
+        {stats.unanswered > 0 && stats.open > 0 ? (
+          <s-banner tone="info" heading={`${formatMoney(stats.unansweredCents, cur)} was lost to disputes nobody answered`}>
+            {`${stats.unanswered} past dispute${stats.unanswered === 1 ? "" : "s"} closed as lost without a response. `}
+            Every open dispute below has an evidence pack and a draft waiting, so this one doesn't have to go the same way.
+          </s-banner>
+        ) : null}
         {stats.dueSoon > 0 ? (
           <s-banner tone="warning" heading={`${stats.dueSoon} dispute${stats.dueSoon === 1 ? "" : "s"} due in the next 3 days`}>
             Shopify closes a dispute as lost if no evidence arrives by the deadline.
@@ -82,6 +99,14 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
             tone={stats.dueSoon ? "critical" : undefined}
           />
           <Stat label="Recovered" value={formatMoney(stats.recoveredCents, cur)} detail={`${stats.won} won`} tone="success" />
+          {stats.unanswered > 0 ? (
+            <Stat
+              label="Lost without a response"
+              value={formatMoney(stats.unansweredCents, cur)}
+              detail={`${stats.unanswered} dispute${stats.unanswered === 1 ? "" : "s"} expired unanswered`}
+              tone="critical"
+            />
+          ) : null}
           <Stat
             label="Win rate"
             value={stats.winRate === null ? "–" : `${stats.winRate}%`}
@@ -111,12 +136,21 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
           {rows.length === 0 ? (
             <s-box padding="large-200">
               <s-stack alignItems="center" gap="small-200">
-                <s-heading>{tab === "open" ? "Nothing needs a response" : "No disputes here"}</s-heading>
+                <s-heading>
+                  {noDisputesYet ? "No disputes yet. That's good." : tab === "open" ? "Nothing needs a response" : "No disputes here"}
+                </s-heading>
                 <s-paragraph color="subdued">
-                  {tab === "open"
-                    ? "New Shopify Payments disputes show up here the moment Shopify opens them."
-                    : "Try another tab, or sync from Shopify."}
+                  {noDisputesYet
+                    ? "When a customer files a chargeback, it shows up here within seconds with the deadline, an evidence pack and a drafted response. You only have to read it and press submit."
+                    : tab === "open"
+                      ? "New Shopify Payments disputes show up here the moment Shopify opens them."
+                      : "Try another tab, or sync from Shopify."}
                 </s-paragraph>
+                {noDisputesYet && !data.isDemo ? (
+                  <s-button href="/demo" target="_blank">
+                    See a sample dispute
+                  </s-button>
+                ) : null}
               </s-stack>
             </s-box>
           ) : (
