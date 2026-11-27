@@ -13,10 +13,15 @@ export interface SettingsData {
     shippingPolicy: string;
     autoDraft: boolean;
     minFightAmount: number;
+    deadlineAlerts: boolean;
+    alertEmail: string;
+    ownerEmail: string;
     currencyCode: string;
     lastSyncedAt: string | null;
   };
   plan: string;
+  planHasAlerts: boolean;
+  emailConfigured: boolean;
   aiConfigured: boolean;
   privacy: Array<{ id: string; topic: string; status: string; createdAt: string; hasExport: boolean }>;
   isDemo: boolean;
@@ -36,6 +41,8 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
     shippingPolicy: data.shop.shippingPolicy,
     minFightAmount: String(data.shop.minFightAmount),
     autoDraft: data.shop.autoDraft,
+    deadlineAlerts: data.shop.deadlineAlerts,
+    alertEmail: data.shop.alertEmail,
   });
   const busy = fetcher.state !== "idle";
   const set = (key: keyof typeof form) => (e: Event) => {
@@ -54,7 +61,12 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
         loading={busy && fetcher.formData?.get("intent") === "save"}
         onClick={() =>
           fetcher.submit(
-            { intent: "save", ...form, autoDraft: form.autoDraft ? "true" : "false" },
+            {
+              intent: "save",
+              ...form,
+              autoDraft: form.autoDraft ? "true" : "false",
+              deadlineAlerts: form.deadlineAlerts ? "true" : "false",
+            },
             { method: "post" },
           )
         }
@@ -111,6 +123,46 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
                 ? "Claude drafting is configured on this server."
                 : "No Anthropic API key is configured on this server, so drafts use StorePilot's templates."}
             </s-text>
+          </s-stack>
+        </s-section>
+
+        <s-section heading="Deadline alerts">
+          <s-stack gap="base">
+            <s-paragraph color="subdued">
+              An email when a new dispute arrives and again 7, 3 and 1 day before its deadline, so nothing expires
+              unanswered. Disputes you&apos;ve accepted or already submitted are left out.
+            </s-paragraph>
+            {!data.planHasAlerts ? (
+              <s-banner tone="info">
+                Deadline alerts come with the Growth and Pro plans. <s-link href={`${base}/billing`}>Compare plans</s-link>
+              </s-banner>
+            ) : !data.emailConfigured ? (
+              <s-banner tone="warning">
+                Email isn&apos;t configured on this StorePilot server yet (RESEND_API_KEY and ALERTS_FROM_EMAIL), so
+                alerts can&apos;t be sent. The deadline banner on the Disputes page still works.
+              </s-banner>
+            ) : null}
+            <s-checkbox
+              label="Email me about dispute deadlines"
+              checked={form.deadlineAlerts}
+              disabled={!data.planHasAlerts}
+              onChange={(e) => {
+                const checked = e.currentTarget.checked;
+                setForm((f) => ({ ...f, deadlineAlerts: checked }));
+              }}
+            />
+            <s-email-field
+              label="Send alerts to"
+              placeholder={data.shop.ownerEmail || "you@example.com"}
+              details={
+                data.shop.ownerEmail
+                  ? `Leave empty to use your store's email (${data.shop.ownerEmail}).`
+                  : "Your store has no email on file, so add one here to get alerts."
+              }
+              disabled={!data.planHasAlerts}
+              value={form.alertEmail}
+              onInput={set("alertEmail")}
+            />
           </s-stack>
         </s-section>
 

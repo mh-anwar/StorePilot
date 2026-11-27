@@ -50,6 +50,9 @@ model Shop {
   supportEmail        String?
   autoDraft           Boolean @default(true)
   minFightAmountCents Int     @default(2000)
+  // Deadline alert emails (Growth and Pro). alertEmail falls back to the shop owner's email.
+  deadlineAlerts      Boolean @default(true)
+  alertEmail          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -88,6 +91,8 @@ model Dispute {
   assessment      String? // JSON Assessment
   decision        String? // merchant's call: FIGHT | ACCEPT
   redactedAt      DateTime?
+  // Smallest "days left" threshold we've already emailed about (see lib/alerts).
+  alertStage      Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

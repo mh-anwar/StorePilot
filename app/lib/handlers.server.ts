@@ -11,12 +11,14 @@ import { syncDisputes } from "./disputes/sync.server";
 import { dashboardStats, disputeDetail, listDisputes, recentActivity, type InboxTab } from "./disputes/views.server";
 import { aiAvailable } from "./disputes/draft/ai.server";
 import { messageOf } from "./errors";
+import { emailConfigured } from "./alerts/email.server";
 import { privacyRequests } from "./gdpr.server";
 import { refreshShopDetails } from "./shop.server";
 
 import type { ActionResult } from "./action-result";
 export type { ActionResult };
 
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const TABS: InboxTab[] = ["open", "submitted", "closed", "all"];
 
 export async function inboxLoader(ctx: StoreContext, request: Request) {
@@ -139,10 +141,15 @@ export async function settingsLoader(ctx: StoreContext) {
       shippingPolicy: ctx.shop.shippingPolicy ?? "",
       autoDraft: ctx.shop.autoDraft,
       minFightAmount: ctx.shop.minFightAmountCents / 100,
+      deadlineAlerts: ctx.shop.deadlineAlerts,
+      alertEmail: ctx.shop.alertEmail ?? "",
+      ownerEmail: ctx.shop.email ?? "",
       currencyCode: ctx.shop.currencyCode,
       lastSyncedAt: ctx.shop.lastSyncedAt?.toISOString() ?? null,
     },
     plan: planFor(ctx.shop.plan).key,
+    planHasAlerts: planFor(ctx.shop.plan).deadlineAlerts,
+    emailConfigured: emailConfigured(),
     aiConfigured: aiAvailable(),
     privacy: await privacyRequests(ctx.shop.domain),
     isDemo: ctx.isDemo,
@@ -161,8 +168,12 @@ export async function settingsAction(ctx: StoreContext, request: Request): Promi
     }
     const min = Number(form.get("minFightAmount") ?? 0);
     const email = String(form.get("supportEmail") ?? "").trim();
-    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (email && !EMAIL_RE.test(email)) {
       return { ok: false, error: "Support email doesn't look like an email address." };
+    }
+    const alertEmail = String(form.get("alertEmail") ?? "").trim();
+    if (alertEmail && !EMAIL_RE.test(alertEmail)) {
+      return { ok: false, error: "Alert email doesn't look like an email address." };
     }
     if (!Number.isFinite(min) || min < 0 || min > 100000) {
       return { ok: false, error: "Minimum amount must be between 0 and 100,000." };
@@ -175,6 +186,11 @@ export async function settingsAction(ctx: StoreContext, request: Request): Promi
         shippingPolicy: String(form.get("shippingPolicy") ?? "").trim() || null,
         autoDraft: form.get("autoDraft") === "on" || form.get("autoDraft") === "true",
         minFightAmountCents: Math.round(min * 100),
+        // Older clients don't send these fields; leave the stored values alone then.
+        ...(form.has("deadlineAlerts")
+          ? { deadlineAlerts: form.get("deadlineAlerts") === "on" || form.get("deadlineAlerts") === "true" }
+          : {}),
+        ...(form.has("alertEmail") ? { alertEmail: alertEmail || null } : {}),
       },
     });
     return { ok: true, message: "Settings saved." };

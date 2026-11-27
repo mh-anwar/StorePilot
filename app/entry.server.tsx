@@ -5,6 +5,10 @@ import { createReadableStreamFromReadable } from "@react-router/node";
 import { type EntryContext } from "react-router";
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
+import { startAlertScheduler } from "./lib/alerts/deadlines.server";
+
+// Hourly deadline alert emails (no-op without email configured, or in tests).
+startAlertScheduler();
 
 export const streamTimeout = 5000;
 
