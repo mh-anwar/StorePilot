@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DISPUTE_REASONS } from "../../app/lib/disputes/types";
-import { guideBySlug, guideJsonLd, GUIDES } from "../../app/lib/guides";
+import { guideBySlug, guideForReason, guideJsonLd, GUIDES } from "../../app/lib/guides";
 import { sitemapXml } from "../../app/routes/sitemap[.]xml";
 
 describe("chargeback guides", () => {
@@ -37,4 +37,10 @@ it("guide structured data is an Article that can't break out of its script tag",
   const raw = guideJsonLd(g, "https://storepilot.example/guides/x");
   expect(raw).not.toContain("<");
   expect(JSON.parse(raw)).toMatchObject({ "@type": "Article", headline: "A </script> title" });
+});
+
+it("maps dispute reasons to their guide, and leaves rare bank-side reasons without one", () => {
+  expect(guideForReason("UNRECOGNIZED")?.slug).toBe("fraudulent");
+  expect(guideForReason("CUSTOMER_INITIATED")?.slug).toBe("general-dispute");
+  expect(guideForReason("INSUFFICIENT_FUNDS")).toBeUndefined();
 });

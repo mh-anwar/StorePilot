@@ -168,6 +168,10 @@ export const GUIDES: Guide[] = [
   },
 ];
 
+export function guideForReason(reason: string): Guide | undefined {
+  return GUIDES.find((g) => (g.reasons as string[]).includes(reason));
+}
+
 export function guideBySlug(slug: string | undefined): Guide | undefined {
   return GUIDES.find((g) => g.slug === slug);
 }

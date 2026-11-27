@@ -165,3 +165,5 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
 - **Fee calculator** at `/calculator`: a year of percentage-fee service costs vs
   the StorePilot plan that fits the store's volume, recomputed as you type;
   linked from the landing page and in the sitemap.
+- **Dispute page links to its guide** ("How these disputes are judged") next to
+  the evidence checklist.

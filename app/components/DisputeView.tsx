@@ -7,6 +7,7 @@ import type { ActionResult } from "../lib/action-result";
 import { FIELD_LABELS, TEXT_FIELDS } from "../lib/disputes/evidence-input";
 import type { DraftView } from "../lib/disputes/records.server";
 import type { Assessment, EvidenceTextField, OrderSnapshot } from "../lib/disputes/types";
+import { guideForReason } from "../lib/guides";
 import { Flash } from "./Flash";
 import { capitalize } from "./Inbox";
 import {
@@ -172,7 +173,14 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                     ))}
                   </s-unordered-list>
                   <s-divider />
-                  <s-heading>What the bank will look for</s-heading>
+                  <s-stack direction="inline" justifyContent="space-between" alignItems="center">
+                    <s-heading>What the bank will look for</s-heading>
+                    {guideForReason(d.reason) ? (
+                      <s-link href={`/guides/${guideForReason(d.reason)!.slug}`} target="_blank">
+                        How these disputes are judged
+                      </s-link>
+                    ) : null}
+                  </s-stack>
                   <s-stack gap="small-200">
                     {assessment.checklist.map((item) => (
                       <s-stack key={item.key} direction="inline" gap="small-200" alignItems="start">
