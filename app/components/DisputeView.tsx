@@ -125,12 +125,12 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
         Disputes
       </s-link>
       {editable && !snapshot ? (
-        <s-button slot="primary-action" variant="primary" loading={busy && pending === "build"} onClick={() => run("build")}>
+        <s-button slot="primary-action" variant="primary" loading={(busy && pending === "build") || undefined} onClick={() => run("build")}>
           Build evidence pack
         </s-button>
       ) : null}
       {editable && snapshot ? (
-        <s-button slot="secondary-actions" loading={busy && pending === "build"} onClick={() => run("build")}>
+        <s-button slot="secondary-actions" loading={(busy && pending === "build") || undefined} onClick={() => run("build")}>
           Refresh evidence
         </s-button>
       ) : null}
@@ -207,7 +207,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                         ? "StorePilot will write a rebuttal from the evidence pack using its built-in templates (add an Anthropic API key to get Claude-written drafts)."
                         : "StorePilot will write a rebuttal from the evidence pack using its built-in templates. Growth and Pro plans get drafts written by Claude."}
                   </s-paragraph>
-                  <s-button variant="primary" loading={busy && pending === "draft"} onClick={() => run("draft")}>
+                  <s-button variant="primary" loading={(busy && pending === "draft") || undefined} onClick={() => run("draft")}>
                     Draft the response
                   </s-button>
                 </s-stack>
@@ -238,7 +238,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                       name={key}
                       rows={key === "uncategorizedText" ? 14 : 4}
                       value={fields[key] ?? ""}
-                      readOnly={!editable || busy}
+                      readOnly={(!editable || busy) || undefined}
                       maxLength={key === "uncategorizedText" ? 4500 : 2000}
                       onInput={(e) => {
                         const value = e.currentTarget.value;
@@ -254,7 +254,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                         label={FIELD_LABELS[key]}
                         name={key}
                         value={fields[key] ?? ""}
-                        readOnly={!editable || busy}
+                        readOnly={(!editable || busy) || undefined}
                         onInput={(e) => {
                           const value = e.currentTarget.value;
                           setFields((f) => ({ ...f, [key]: value }));
@@ -285,7 +285,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                               {`Shopify sends it to the cardholder's bank for ${formatMoney(d.amountCents, d.currencyCode)}. A dispute gets one submission: you can't change or add evidence afterwards.`}
                             </s-paragraph>
                             <s-stack direction="inline" gap="small-200">
-                              <s-button variant="primary" tone="critical" loading={busy && pending === "submit"} onClick={() => run("submit", true)}>
+                              <s-button variant="primary" tone="critical" loading={(busy && pending === "submit") || undefined} onClick={() => run("submit", true)}>
                                 Submit to the bank
                               </s-button>
                               <s-button onClick={() => setConfirming(false)}>Cancel</s-button>
@@ -294,18 +294,18 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                         </s-banner>
                       ) : (
                         <s-stack direction="inline" gap="small-200">
-                          <s-button variant="primary" disabled={!fields.uncategorizedText?.trim() || busy} onClick={() => setConfirming(true)}>
+                          <s-button variant="primary" disabled={(!fields.uncategorizedText?.trim() || busy) || undefined} onClick={() => setConfirming(true)}>
                             Submit to the bank…
                           </s-button>
-                          <s-button loading={busy && pending === "save_shopify"} onClick={() => run("save_shopify", true)}>
+                          <s-button loading={(busy && pending === "save_shopify") || undefined} onClick={() => run("save_shopify", true)}>
                             Save to Shopify
                           </s-button>
-                          <s-button disabled={!dirty} loading={busy && pending === "save"} onClick={() => run("save", true)}>
+                          <s-button disabled={(!dirty) || undefined} loading={(busy && pending === "save") || undefined} onClick={() => run("save", true)}>
                             Save draft
                           </s-button>
                           <s-button
                             variant="tertiary"
-                            loading={busy && pending === "draft"}
+                            loading={(busy && pending === "draft") || undefined}
                             onClick={() => (dirty ? setConfirmRedraft(true) : run("draft"))}
                           >
                             Redraft
@@ -336,11 +336,11 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
               {editable ? (
                 <s-box paddingBlockStart="base">
                   {d.decision === "ACCEPT" ? (
-                    <s-button loading={busy && pending === "undecide"} onClick={() => run("undecide")}>
+                    <s-button loading={(busy && pending === "undecide") || undefined} onClick={() => run("undecide")}>
                       Undo accept
                     </s-button>
                   ) : (
-                    <s-button tone="critical" variant="tertiary" loading={busy && pending === "accept"} onClick={() => run("accept")}>
+                    <s-button tone="critical" variant="tertiary" loading={(busy && pending === "accept") || undefined} onClick={() => run("accept")}>
                       Accept the chargeback (don&apos;t fight)
                     </s-button>
                   )}

@@ -60,7 +60,7 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
       <s-button
         slot="primary-action"
         variant="primary"
-        loading={busy && fetcher.formData?.get("intent") === "save"}
+        loading={(busy && fetcher.formData?.get("intent") === "save") || undefined}
         onClick={() =>
           fetcher.submit(
             {
@@ -89,7 +89,7 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
             <s-text-area label="Shipping policy" rows={5} value={form.shippingPolicy} onInput={set("shippingPolicy")} />
             <s-button
               variant="tertiary"
-              loading={busy && fetcher.formData?.get("intent") === "reload_policies"}
+              loading={(busy && fetcher.formData?.get("intent") === "reload_policies") || undefined}
               onClick={() => fetcher.submit({ intent: "reload_policies" }, { method: "post" })}
             >
               Reload from my store
@@ -114,8 +114,8 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
             />
             <s-checkbox
               label="Draft a response as soon as a dispute arrives (Pro)"
-              checked={form.autoDraft}
-              disabled={data.plan !== "pro"}
+              checked={(form.autoDraft) || undefined}
+              disabled={(data.plan !== "pro") || undefined}
               onChange={(e) => {
                 const checked = e.currentTarget.checked;
                 setForm((f) => ({ ...f, autoDraft: checked }));
@@ -148,8 +148,8 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
             ) : null}
             <s-checkbox
               label="Email me about dispute deadlines"
-              checked={form.deadlineAlerts}
-              disabled={!data.planHasAlerts}
+              checked={(form.deadlineAlerts) || undefined}
+              disabled={(!data.planHasAlerts) || undefined}
               onChange={(e) => {
                 const checked = e.currentTarget.checked;
                 setForm((f) => ({ ...f, deadlineAlerts: checked }));
@@ -157,7 +157,7 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
             />
             <s-checkbox
               label="Monthly summary: disputes, responses and money recovered last month"
-              checked={form.monthlySummary}
+              checked={(form.monthlySummary) || undefined}
               onChange={(e) => {
                 const checked = e.currentTarget.checked;
                 setForm((f) => ({ ...f, monthlySummary: checked }));

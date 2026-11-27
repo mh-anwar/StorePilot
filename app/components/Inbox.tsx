@@ -65,7 +65,7 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
       <s-button
         slot="primary-action"
         variant="primary"
-        loading={syncing}
+        loading={(syncing) || undefined}
         onClick={() => fetcher.submit({ intent: "sync" }, { method: "post" })}
       >
         Sync from Shopify

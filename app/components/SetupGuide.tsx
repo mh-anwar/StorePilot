@@ -17,7 +17,7 @@ export function SetupGuide({ guide }: { guide: Guide }) {
           <s-heading>Get ready for your next dispute</s-heading>
           <s-button
             variant="tertiary"
-            loading={busy("dismiss_setup")}
+            loading={(busy("dismiss_setup")) || undefined}
             onClick={() => fetcher.submit({ intent: "dismiss_setup" }, { method: "post" })}
           >
             Hide guide
@@ -53,7 +53,7 @@ export function SetupGuide({ guide }: { guide: Guide }) {
                         {step.intent ? (
                           <s-button
                             variant="primary"
-                            loading={busy(step.intent)}
+                            loading={(busy(step.intent)) || undefined}
                             onClick={() => fetcher.submit({ intent: step.intent! }, { method: "post" })}
                           >
                             {step.cta}

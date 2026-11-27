@@ -50,7 +50,7 @@ export function PlansView({ data, base }: { data: PlansData; base: string }) {
                   ) : (
                     <s-button
                       variant={key === "free" ? "secondary" : "primary"}
-                      loading={busy && pendingPlan === key}
+                      loading={(busy && pendingPlan === key) || undefined}
                       onClick={() => fetcher.submit({ plan: key }, { method: "post" })}
                     >
                       {key === "free" ? "Downgrade to Free" : `Choose ${plan.label}`}
