@@ -18,6 +18,7 @@ Live work queue. Update after every step so the next agent can pick up.
   `test/unit/inline-styles.test.ts`. Was present on `main` too.
 - `docs/GROWTH_PLAN.md` with changelog.
 - Upgrade prompt on the dispute page when packs are used up (`outOfPacks` in detailLoader, `code: "plan_limit"` on ActionResult, Flash offers See plans).
+- Public guides `/guides`, `/guides/<slug>` (`app/lib/guides.ts`), `/sitemap.xml`, `/robots.txt`.
 
 ## In progress
 - (none)
@@ -27,7 +28,7 @@ Live work queue. Update after every step so the next agent can pick up.
 - Monthly summary email ("2 disputes answered, $410 recovered") reusing `app/lib/alerts/email.server.ts`.
 - Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings
   (`pnpm walkthrough`; README screenshots predate the setup guide).
-- SEO pages per reason code (see GROWTH_PLAN.md section 3).
+
 
 ## Checks
 `pnpm typecheck && pnpm test && pnpm test:integration && pnpm test:e2e`

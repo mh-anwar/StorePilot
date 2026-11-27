@@ -54,7 +54,9 @@ Merchants google "shopify chargeback what to do" before they ever open the App
 Store. The landing page (`/`) now has real copy, a meta description and Open
 Graph tags. Next:
 
-- Publish one page per reason code: "How to respond to a 'product not received'
+- Done in this pass: six guides at `/guides` (one per reason group) plus `/sitemap.xml`
+  and `/robots.txt`. Next, submit the sitemap in Google Search Console. Original idea:
+  one page per reason code: "How to respond to a 'product not received'
   chargeback on Shopify", "...'fraudulent'...", and so on (10 reason codes). The
   checklist logic in `app/lib/disputes/evidence.ts` is the content; each page ends
   with "StorePilot builds this pack for you" and a link to the demo.
@@ -142,3 +144,9 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
   from the plan definitions, FAQ, install form, meta and Open Graph tags.
 - **App Store listing copy** in the repo, with a test that keeps it inside the
   field limits and in step with plan prices.
+- **Upgrade prompt** on the dispute page when the month's packs are used up, with
+  the dispute's amount and a link to Plans; the failed build offers the same link.
+- **Chargeback guides** at `/guides` (six reason groups), `/sitemap.xml` and
+  `/robots.txt`, linked from the landing page.
+- **Fixed** hydration failures on every `/demo` and `/privacy` page load (quotes in
+  inline `<style>` blocks), present on `main` too.
