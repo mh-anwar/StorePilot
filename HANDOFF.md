@@ -24,6 +24,7 @@ Stopped 2026-11-26 ~19:48 EST at the hard stop. Everything below is committed an
 - Dispute page links to the matching guide (`guideForReason`), new guide `general-dispute`.
 - Settings "Send a test email" (`intent: "test_email"` in settingsAction).
 - Social image tags (og:image, twitter:card) on /guides, guide pages and /calculator (`app/lib/seo.ts`).
+- Guide for inquiries (`/guides/inquiry`): 8 guides total, all in the sitemap.
 - App Store listing copy in `docs/APP_STORE_LISTING.md`, limits checked by `test/unit/listing.test.ts`.
 - Demo fixture dispute 876 (#1019) is now an expired, unanswered loss, so the demo shows the hook.
 - Bug fixes (both also on `main`): quotes in inline `<style>` broke hydration on /demo and /privacy

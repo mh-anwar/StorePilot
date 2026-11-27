@@ -166,6 +166,28 @@ export const GUIDES: Guide[] = [
       "Not checking your inbox: the customer may have written to you first, and that message often explains the dispute.",
     ],
   },
+  {
+    slug: "inquiry",
+    reasons: [],
+    title: "How to answer a Shopify Payments inquiry before it becomes a chargeback",
+    description:
+      "An inquiry is the bank asking questions before a chargeback. No money has moved yet. What to send so it closes in your favour.",
+    claim:
+      "The cardholder's bank is asking about a charge before deciding whether to file a chargeback. The money hasn't been taken back yet, so a clear answer now can stop the dispute entirely.",
+    evidence: [
+      { item: "What was bought and when", why: "The order, the items and the date, so the cardholder recognizes the purchase." },
+      { item: "The name on their statement", why: "Many inquiries are customers who don't recognize the store name on their bank statement." },
+      { item: "Proof of delivery", why: "Shows the order arrived, which answers most questions on its own." },
+      { item: "AVS and CVV results", why: "If fraud is suspected, shows the real cardholder's details were used." },
+      { item: "How to reach you", why: "A support email and your refund policy show the customer can sort it out with you directly." },
+    ],
+    accept:
+      "If the order really was a mistake or never shipped, refund it now. That usually closes the inquiry without a chargeback fee.",
+    mistakes: [
+      "Ignoring it because no money has moved yet. An unanswered inquiry often becomes a chargeback.",
+      "Answering after the deadline: inquiries have one too.",
+    ],
+  },
 ];
 
 export function guideForReason(reason: string): Guide | undefined {
