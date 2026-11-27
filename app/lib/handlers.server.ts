@@ -11,7 +11,7 @@ import { syncDisputes } from "./disputes/sync.server";
 import { dashboardStats, disputeDetail, listDisputes, recentActivity, type InboxTab } from "./disputes/views.server";
 import { aiAvailable } from "./disputes/draft/ai.server";
 import { messageOf, PlanLimitError } from "./errors";
-import { emailConfigured } from "./alerts/email.server";
+import { emailConfigured, sendEmail } from "./alerts/email.server";
 import { privacyRequests } from "./gdpr.server";
 import { shouldAskForReview } from "./onboarding";
 import { refreshShopDetails } from "./shop.server";
@@ -180,6 +180,19 @@ export async function settingsAction(ctx: StoreContext, request: Request): Promi
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "save");
   try {
+    if (intent === "test_email") {
+      if (!emailConfigured()) return { ok: false, error: "Emails aren't switched on for this StorePilot server yet." };
+      const to = (ctx.shop.alertEmail ?? ctx.shop.email ?? "").trim();
+      if (!to) return { ok: false, error: "Add an address under Emails and save first." };
+      const sent = await sendEmail({
+        to,
+        subject: "StorePilot test email",
+        text: `This is a test from StorePilot for ${ctx.shop.name ?? ctx.shop.domain}. Deadline alerts and monthly summaries will arrive at this address.`,
+      });
+      return sent.sent
+        ? { ok: true, message: `Test email sent to ${to}. If it isn't in your inbox in a few minutes, check spam.` }
+        : { ok: false, error: `The test email couldn't be sent (${sent.reason}).` };
+    }
     if (intent === "reload_policies") {
       await prisma.shop.update({ where: { id: ctx.shop.id }, data: { refundPolicy: null, shippingPolicy: null } });
       const fresh = await prisma.shop.findUniqueOrThrow({ where: { id: ctx.shop.id } });

@@ -167,3 +167,4 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
   linked from the landing page and in the sitemap.
 - **Dispute page links to its guide** ("How these disputes are judged") next to
   the evidence checklist.
+- **"Send a test email"** in Settings, so merchants can confirm alerts reach them.

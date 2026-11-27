@@ -174,6 +174,17 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
               value={form.alertEmail}
               onInput={set("alertEmail")}
             />
+            {data.emailConfigured ? (
+              <s-stack direction="inline">
+                <s-button
+                  variant="tertiary"
+                  loading={(busy && fetcher.formData?.get("intent") === "test_email") || undefined}
+                  onClick={() => fetcher.submit({ intent: "test_email" }, { method: "post" })}
+                >
+                  Send a test email
+                </s-button>
+              </s-stack>
+            ) : null}
           </s-stack>
         </s-section>
 

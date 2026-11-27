@@ -109,6 +109,30 @@ describe("deadline alerts", () => {
   });
 });
 
+describe("test email from settings", () => {
+  const testEmail = () => new Request("http://app.test/app/settings", { method: "POST", body: new URLSearchParams({ intent: "test_email" }) });
+
+  it("goes to the alert address, or the store email when none is set", async () => {
+    const ctx = await growthStore();
+    expect(await settingsAction(ctx, testEmail())).toMatchObject({ ok: true });
+    expect(outbox[0]).toMatchObject({ to: "owner@junipertrail.example.com", subject: "StorePilot test email" });
+    ctx.shop = await prisma.shop.update({ where: { id: ctx.shop.id }, data: { alertEmail: "disputes@example.com" } });
+    await settingsAction(ctx, testEmail());
+    expect(outbox[1].to).toBe("disputes@example.com");
+  });
+
+  it("explains why when it can't send", async () => {
+    const ctx = await growthStore();
+    setEmailTransport(async () => ({ sent: false, reason: "resend 403" }));
+    expect(await settingsAction(ctx, testEmail())).toMatchObject({ ok: false, error: expect.stringContaining("resend 403") });
+    setEmailTransport(null);
+    const saved = process.env.RESEND_API_KEY;
+    delete process.env.RESEND_API_KEY;
+    expect(await settingsAction(ctx, testEmail())).toMatchObject({ ok: false, error: expect.stringContaining("switched on") });
+    if (saved) process.env.RESEND_API_KEY = saved;
+  });
+});
+
 describe("/cron/deadlines", () => {
   const call = (auth?: string) =>
     cronLoader({

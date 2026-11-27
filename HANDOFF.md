@@ -22,6 +22,7 @@ Stopped 2026-11-26 ~19:36 EST at the planned hard stop. Everything below is comm
 - Public guides `/guides`, `/guides/<slug>` (`app/lib/guides.ts`, Article JSON-LD), `/sitemap.xml`, `/robots.txt`.
 - Fee calculator `/calculator` (`app/lib/calculator.ts`), linked from the landing page, in the sitemap and the walkthrough.
 - Dispute page links to the matching guide (`guideForReason`), new guide `general-dispute`.
+- Settings "Send a test email" (`intent: "test_email"` in settingsAction).
 - App Store listing copy in `docs/APP_STORE_LISTING.md`, limits checked by `test/unit/listing.test.ts`.
 - Demo fixture dispute 876 (#1019) is now an expired, unanswered loss, so the demo shows the hook.
 - Bug fixes (both also on `main`): quotes in inline `<style>` broke hydration on /demo and /privacy
