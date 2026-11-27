@@ -7,7 +7,7 @@ import type { ActionResult } from "../lib/action-result";
 import { FIELD_LABELS, TEXT_FIELDS } from "../lib/disputes/evidence-input";
 import type { DraftView } from "../lib/disputes/records.server";
 import type { Assessment, EvidenceTextField, OrderSnapshot } from "../lib/disputes/types";
-import { guideForReason } from "../lib/guides";
+import { guideBySlug, guideForReason } from "../lib/guides";
 import { Flash } from "./Flash";
 import { capitalize } from "./Inbox";
 import {
@@ -69,6 +69,10 @@ const REASON_FIELDS: Record<string, EvidenceTextField[]> = {
 };
 
 const CUSTOMER_FIELDS: EvidenceTextField[] = ["customerFirstName", "customerLastName", "customerEmailAddress"];
+
+/** Inquiries get the inquiry guide; chargebacks get the guide for their reason. */
+const guideFor = (d: { type: string; reason: string }) =>
+  d.type === "INQUIRY" ? guideBySlug("inquiry") : guideForReason(d.reason);
 
 const STATUS_ICON = { strong: "check-circle", weak: "alert-circle", missing: "x-circle" } as const;
 const STATUS_TONE_ITEM = { strong: "success", weak: "caution", missing: "critical" } as const;
@@ -175,8 +179,8 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                   <s-divider />
                   <s-stack direction="inline" justifyContent="space-between" alignItems="center">
                     <s-heading>What the bank will look for</s-heading>
-                    {guideForReason(d.reason) ? (
-                      <s-link href={`/guides/${guideForReason(d.reason)!.slug}`} target="_blank">
+                    {guideFor(d) ? (
+                      <s-link href={`/guides/${guideFor(d)!.slug}`} target="_blank">
                         How these disputes are judged
                       </s-link>
                     ) : null}

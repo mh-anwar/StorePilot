@@ -1,7 +1,7 @@
 # Handoff: growth pass (branch `growth/2026-11-26`, draft PR #5)
 
 Live work queue. Update after every step so the next agent can pick up.
-Stopped 2026-11-26 ~19:48 EST at the hard stop. Everything below is committed and pushed.
+Stopped 2026-11-26 ~19:54 EST at the hard stop. Everything below is committed and pushed.
 
 ## Done
 - First-run setup guide on the home page (`app/components/SetupGuide.tsx`, `app/lib/onboarding.ts`),
@@ -24,7 +24,7 @@ Stopped 2026-11-26 ~19:48 EST at the hard stop. Everything below is committed an
 - Dispute page links to the matching guide (`guideForReason`), new guide `general-dispute`.
 - Settings "Send a test email" (`intent: "test_email"` in settingsAction).
 - Social image tags (og:image, twitter:card) on /guides, guide pages and /calculator (`app/lib/seo.ts`).
-- Guide for inquiries (`/guides/inquiry`): 8 guides total, all in the sitemap.
+- Guide for inquiries (`/guides/inquiry`), linked from inquiry-type disputes: 8 guides total, all in the sitemap.
 - App Store listing copy in `docs/APP_STORE_LISTING.md`, limits checked by `test/unit/listing.test.ts`.
 - Demo fixture dispute 876 (#1019) is now an expired, unanswered loss, so the demo shows the hook.
 - Bug fixes (both also on `main`): quotes in inline `<style>` broke hydration on /demo and /privacy
@@ -47,4 +47,4 @@ Stopped 2026-11-26 ~19:48 EST at the hard stop. Everything below is committed an
 ## Checks
 `pnpm typecheck && pnpm test && pnpm test:integration && pnpm test:e2e`
 Browser: `pnpm build && PORT=3457 pnpm start`, then `BASE_URL=http://127.0.0.1:3457 pnpm walkthrough`.
-Last run (19:47): typecheck clean; unit 105, integration 57, e2e 12 pass; walkthrough 18/18.
+Last run (19:53): typecheck clean; unit 107, integration 57, e2e 12 pass; walkthrough 18/18.
