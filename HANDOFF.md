@@ -11,18 +11,22 @@ Live work queue. Update after every step so the next agent can pick up.
   migration `20261126191000_deadline_alerts`, Settings section). Resend via env vars; docs in INSTALL.md.
 - Public landing page rewritten (problem, steps, pricing, FAQ, install form, meta/OG tags).
 - App Store listing copy in `docs/APP_STORE_LISTING.md`, limits checked by `test/unit/listing.test.ts`.
-- App Store review request via App Bridge after the first won dispute (`useReviewRequest` in Inbox.tsx, `Shop.reviewRequestedAt`).
+- App Store review request via App Bridge after the first won dispute (`useReviewRequest` in Inbox.tsx,
+  `Shop.reviewRequestedAt`, migration `20261126192000_review_request`).
+- Demo fixture dispute 876 (#1019) is now an expired, unanswered loss, so the demo shows the hook.
+- Hydration failures on /demo and /privacy fixed (quotes in inline `<style>`); guarded by
+  `test/unit/inline-styles.test.ts`. Was present on `main` too.
+- `docs/GROWTH_PLAN.md` with changelog.
 
 ## In progress
-- `docs/GROWTH_PLAN.md` + changelog.
+- (none)
 
 ## Up next (not started)
-- DONE: demo fixture #1019 (dispute 876) is now an expired, unanswered loss, so the demo shows the
-  lost-without-a-response banner.
-- React hydration warnings (#418/#425) on `/demo` pages in production build; seen in headless Chrome.
-  Probably Polaris web components touching the DOM before hydration. Not checked against `main`.
-- Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings.
-
+- Upgrade prompt when a Free store hits its pack limit on a dispute worth more than the Growth price.
+- Monthly summary email ("2 disputes answered, $410 recovered") reusing `app/lib/alerts/email.server.ts`.
+- Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings
+  (`pnpm walkthrough`; README screenshots predate the setup guide).
+- SEO pages per reason code (see GROWTH_PLAN.md section 3).
 
 ## Checks
 `pnpm typecheck && pnpm test && pnpm test:integration && pnpm test:e2e`
