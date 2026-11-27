@@ -17,8 +17,8 @@ Live work queue. Update after every step so the next agent can pick up.
 - `docs/GROWTH_PLAN.md` + changelog.
 
 ## Up next (not started)
-- Add an "expired unanswered" dispute to the demo fixtures so the demo shows the
-  lost-without-a-response banner (update counts in `test/integration/*` that assume 10 disputes).
+- DONE: demo fixture #1019 (dispute 876) is now an expired, unanswered loss, so the demo shows the
+  lost-without-a-response banner.
 - React hydration warnings (#418/#425) on `/demo` pages in production build; seen in headless Chrome.
   Probably Polaris web components touching the DOM before hydration. Not checked against `main`.
 - Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings.

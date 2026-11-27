@@ -63,14 +63,17 @@ describe("lost without a response", () => {
   it("counts lost disputes that never had evidence sent, not ones we fought and lost", async () => {
     const ctx = await makeStore();
     await syncDisputes(ctx);
+    // The fixture's lost dispute expired before anyone answered it.
+    const lost = await prisma.dispute.findFirstOrThrow({ where: { shopId: ctx.shop.id, status: "LOST" } });
+    const s = await dashboardStats(ctx);
+    expect(s.lost).toBe(1);
+    expect(s.unanswered).toBe(1);
+    expect(s.unansweredCents).toBe(lost.amountCents);
+
+    // Had evidence gone out, it's an ordinary loss, not an unanswered one.
+    await prisma.dispute.update({ where: { id: lost.id }, data: { evidenceSentOn: new Date() } });
     const fought = await dashboardStats(ctx);
     expect(fought.lost).toBe(1);
     expect(fought.unanswered).toBe(0);
-
-    const lost = await prisma.dispute.findFirstOrThrow({ where: { shopId: ctx.shop.id, status: "LOST" } });
-    await prisma.dispute.update({ where: { id: lost.id }, data: { evidenceSentOn: null } });
-    const s = await dashboardStats(ctx);
-    expect(s.unanswered).toBe(1);
-    expect(s.unansweredCents).toBe(lost.amountCents);
   });
 });
