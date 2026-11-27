@@ -153,3 +153,8 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
 - **Monthly summary email** (every plan): last month's disputes, responses, wins,
   money recovered and anything still open; for Free stores, what unanswered
   disputes cost and how alerts would help. Once per month, quiet months skipped.
+- **Fixed** Polaris buttons and checkboxes server-rendering as `loading="false"` /
+  `disabled="false"` / `checked="false"` (which Polaris reads as true). Hidden on
+  the demo by the hydration failure above; the embedded app was likely affected.
+  A unit test keeps boolean props on `s-*` elements as `cond || undefined`.
+- README and landing screenshots refreshed from a passing `pnpm walkthrough`.

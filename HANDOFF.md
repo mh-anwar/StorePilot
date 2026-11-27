@@ -20,6 +20,7 @@ Live work queue. Update after every step so the next agent can pick up.
 - Upgrade prompt on the dispute page when packs are used up (`outOfPacks` in detailLoader, `code: "plan_limit"` on ActionResult, Flash offers See plans).
 - Public guides `/guides`, `/guides/<slug>` (`app/lib/guides.ts`), `/sitemap.xml`, `/robots.txt`.
 - Monthly summary email (`app/lib/alerts/summary.server.ts`, `Shop.monthlySummary`/`summaryMonth`, migration `20261126193000_monthly_summary`), run by the same hourly scheduler and `/cron/deadlines`.
+- Boolean props on s-* elements fixed (`cond || undefined`), guarded by `test/unit/web-component-booleans.test.ts`; walkthrough passes.
 
 ## In progress
 - (none)
@@ -27,8 +28,8 @@ Live work queue. Update after every step so the next agent can pick up.
 ## Up next (not started)
 
 
-- Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings
-  (`pnpm walkthrough`; README screenshots predate the setup guide).
+- Listing screenshots at 1600x900 (README ones were refreshed 2026-11-26 at 2720x1800)
+  from the embedded app, per docs/APP_STORE_LISTING.md.
 
 
 ## Checks
