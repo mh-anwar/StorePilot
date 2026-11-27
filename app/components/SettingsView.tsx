@@ -138,8 +138,8 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
               </s-banner>
             ) : !data.emailConfigured ? (
               <s-banner tone="warning">
-                Email isn&apos;t configured on this StorePilot server yet (RESEND_API_KEY and ALERTS_FROM_EMAIL), so
-                alerts can&apos;t be sent. The deadline banner on the Disputes page still works.
+                Alert emails aren&apos;t switched on for this StorePilot server yet, so none will be sent. The deadline
+                banner on the Disputes page still works.
               </s-banner>
             ) : null}
             <s-checkbox

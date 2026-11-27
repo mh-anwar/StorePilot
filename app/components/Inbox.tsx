@@ -82,7 +82,7 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
         {stats.unanswered > 0 && stats.open > 0 ? (
           <s-banner tone="info" heading={`${formatMoney(stats.unansweredCents, cur)} was lost to disputes nobody answered`}>
             {`${stats.unanswered} past dispute${stats.unanswered === 1 ? "" : "s"} closed as lost without a response. `}
-            Every open dispute below has an evidence pack and a draft waiting, so this one doesn't have to go the same way.
+            The open ones below each show their deadline and how strong your evidence is, so they don't have to go the same way.
           </s-banner>
         ) : null}
         {stats.dueSoon > 0 ? (
