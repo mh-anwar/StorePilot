@@ -40,7 +40,15 @@ describe("setup guide", () => {
     expect(g.visible).toBe(false);
   });
 
-  it("stays hidden after the merchant dismisses it", () => {
-    expect(setupGuide({ ...fresh, setupDismissedAt: "2026-11-26T00:00:00Z" }, "/app").visible).toBe(false);
+  it("stays hidden after the merchant dismisses it, and can be brought back while steps remain", () => {
+    const g = setupGuide({ ...fresh, setupDismissedAt: "2026-11-26T00:00:00Z" }, "/app");
+    expect(g.visible).toBe(false);
+    expect(g.restorable).toBe(true);
+  });
+
+  it("offers no way back once the required steps are done", () => {
+    const done = { ...fresh, lastSyncedAt: "x", supportEmail: "a@b.co", refundPolicy: "r", shippingPolicy: "s" };
+    expect(setupGuide(done, "/app").restorable).toBe(false);
+    expect(setupGuide({ ...done, setupDismissedAt: "2026-11-26T00:00:00Z" }, "/app").restorable).toBe(false);
   });
 });

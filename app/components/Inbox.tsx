@@ -73,7 +73,7 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
       <s-button slot="secondary-actions" href={`${base}/settings`}>
         Settings
       </s-button>
-      {!guide.visible && guide.completed < guide.total ? (
+      {guide.restorable ? (
         <s-button slot="secondary-actions" onClick={() => fetcher.submit({ intent: "show_setup" }, { method: "post" })}>
           Setup guide
         </s-button>

@@ -33,6 +33,8 @@ export interface SetupGuide {
   total: number;
   /** Show the guide at all: not dismissed and something is left to do. */
   visible: boolean;
+  /** Hidden by the merchant while required steps remain: offer to bring it back. */
+  restorable: boolean;
 }
 
 export function setupGuide(input: SetupInput, base: string): SetupGuide {
@@ -84,6 +86,7 @@ export function setupGuide(input: SetupInput, base: string): SetupGuide {
     completed,
     total: steps.length,
     visible: !input.setupDismissedAt && !requiredDone,
+    restorable: Boolean(input.setupDismissedAt) && !requiredDone,
   };
 }
 
