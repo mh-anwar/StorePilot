@@ -30,7 +30,7 @@ usually take 20-25% of what they recover. StorePilot is a flat monthly price ins
 - Outcomes come back by webhook, and the dashboard shows win rate, money recovered,
   and money lost to disputes nobody answered.
 - On paid plans, an email goes out when a dispute arrives and again 7, 3 and 1 day
-  before its deadline.
+  before its deadline. Every plan gets a short monthly summary email.
 - New installs get a short setup checklist on the home page (import, support email,
   policies, plan).
 

@@ -161,6 +161,7 @@ export async function settingsLoader(ctx: StoreContext) {
       autoDraft: ctx.shop.autoDraft,
       minFightAmount: ctx.shop.minFightAmountCents / 100,
       deadlineAlerts: ctx.shop.deadlineAlerts,
+      monthlySummary: ctx.shop.monthlySummary,
       alertEmail: ctx.shop.alertEmail ?? "",
       ownerEmail: ctx.shop.email ?? "",
       currencyCode: ctx.shop.currencyCode,
@@ -210,6 +211,9 @@ export async function settingsAction(ctx: StoreContext, request: Request): Promi
           ? { deadlineAlerts: form.get("deadlineAlerts") === "on" || form.get("deadlineAlerts") === "true" }
           : {}),
         ...(form.has("alertEmail") ? { alertEmail: alertEmail || null } : {}),
+        ...(form.has("monthlySummary")
+          ? { monthlySummary: form.get("monthlySummary") === "on" || form.get("monthlySummary") === "true" }
+          : {}),
       },
     });
     return { ok: true, message: "Settings saved." };

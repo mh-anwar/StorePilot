@@ -14,6 +14,7 @@ export interface SettingsData {
     autoDraft: boolean;
     minFightAmount: number;
     deadlineAlerts: boolean;
+    monthlySummary: boolean;
     alertEmail: string;
     ownerEmail: string;
     currencyCode: string;
@@ -42,6 +43,7 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
     minFightAmount: String(data.shop.minFightAmount),
     autoDraft: data.shop.autoDraft,
     deadlineAlerts: data.shop.deadlineAlerts,
+    monthlySummary: data.shop.monthlySummary,
     alertEmail: data.shop.alertEmail,
   });
   const busy = fetcher.state !== "idle";
@@ -66,6 +68,7 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
               ...form,
               autoDraft: form.autoDraft ? "true" : "false",
               deadlineAlerts: form.deadlineAlerts ? "true" : "false",
+              monthlySummary: form.monthlySummary ? "true" : "false",
             },
             { method: "post" },
           )
@@ -126,20 +129,21 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
           </s-stack>
         </s-section>
 
-        <s-section heading="Deadline alerts">
+        <s-section heading="Emails">
           <s-stack gap="base">
             <s-paragraph color="subdued">
-              An email when a new dispute arrives and again 7, 3 and 1 day before its deadline, so nothing expires
-              unanswered. Disputes you&apos;ve accepted or already submitted are left out.
+              Deadline alerts: an email when a new dispute arrives and again 7, 3 and 1 day before its deadline, so
+              nothing expires unanswered. Disputes you&apos;ve accepted or already submitted are left out.
             </s-paragraph>
+            {!data.emailConfigured ? (
+              <s-banner tone="warning">
+                Emails aren&apos;t switched on for this StorePilot server yet, so none will be sent. The deadline
+                banner on the Disputes page still works.
+              </s-banner>
+            ) : null}
             {!data.planHasAlerts ? (
               <s-banner tone="info">
-                Deadline alerts come with the Growth and Pro plans. <s-link href={`${base}/billing`}>Compare plans</s-link>
-              </s-banner>
-            ) : !data.emailConfigured ? (
-              <s-banner tone="warning">
-                Alert emails aren&apos;t switched on for this StorePilot server yet, so none will be sent. The deadline
-                banner on the Disputes page still works.
+                Deadline alerts come with the Growth and Pro plans. The monthly summary is on every plan. <s-link href={`${base}/billing`}>Compare plans</s-link>
               </s-banner>
             ) : null}
             <s-checkbox
@@ -151,15 +155,22 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
                 setForm((f) => ({ ...f, deadlineAlerts: checked }));
               }}
             />
+            <s-checkbox
+              label="Monthly summary: disputes, responses and money recovered last month"
+              checked={form.monthlySummary}
+              onChange={(e) => {
+                const checked = e.currentTarget.checked;
+                setForm((f) => ({ ...f, monthlySummary: checked }));
+              }}
+            />
             <s-email-field
-              label="Send alerts to"
+              label="Send emails to"
               placeholder={data.shop.ownerEmail || "you@example.com"}
               details={
                 data.shop.ownerEmail
                   ? `Leave empty to use your store's email (${data.shop.ownerEmail}).`
-                  : "Your store has no email on file, so add one here to get alerts."
+                  : "Your store has no email on file, so add one here to get these emails."
               }
-              disabled={!data.planHasAlerts}
               value={form.alertEmail}
               onInput={set("alertEmail")}
             />

@@ -100,7 +100,7 @@ Graph tags. Next:
 - **Demo without install** (`/demo`), linked from the landing page and the listing.
 
 Ideas for later, in order of expected effect:
-1. A weekly or monthly summary email ("2 disputes answered, $410 recovered").
+1. Done: monthly summary email. Next: make the subject line test-able (A/B) and track opens.
 2. An upgrade prompt when a Free store runs out of packs on a dispute worth more
    than the plan price.
 3. Win-rate benchmarks by reason code across all stores (anonymized), shown on the
@@ -150,3 +150,6 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
   `/robots.txt`, linked from the landing page.
 - **Fixed** hydration failures on every `/demo` and `/privacy` page load (quotes in
   inline `<style>` blocks), present on `main` too.
+- **Monthly summary email** (every plan): last month's disputes, responses, wins,
+  money recovered and anything still open; for Free stores, what unanswered
+  disputes cost and how alerts would help. Once per month, quiet months skipped.

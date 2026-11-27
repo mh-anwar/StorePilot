@@ -19,13 +19,14 @@ Live work queue. Update after every step so the next agent can pick up.
 - `docs/GROWTH_PLAN.md` with changelog.
 - Upgrade prompt on the dispute page when packs are used up (`outOfPacks` in detailLoader, `code: "plan_limit"` on ActionResult, Flash offers See plans).
 - Public guides `/guides`, `/guides/<slug>` (`app/lib/guides.ts`), `/sitemap.xml`, `/robots.txt`.
+- Monthly summary email (`app/lib/alerts/summary.server.ts`, `Shop.monthlySummary`/`summaryMonth`, migration `20261126193000_monthly_summary`), run by the same hourly scheduler and `/cron/deadlines`.
 
 ## In progress
 - (none)
 
 ## Up next (not started)
 
-- Monthly summary email ("2 disputes answered, $410 recovered") reusing `app/lib/alerts/email.server.ts`.
+
 - Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings
   (`pnpm walkthrough`; README screenshots predate the setup guide).
 

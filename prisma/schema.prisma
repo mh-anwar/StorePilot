@@ -55,6 +55,9 @@ model Shop {
   // Deadline alert emails (Growth and Pro). alertEmail falls back to the shop owner's email.
   deadlineAlerts      Boolean @default(true)
   alertEmail          String?
+  // Monthly summary email (all plans). summaryMonth = last "YYYY-MM" summarized.
+  monthlySummary      Boolean @default(true)
+  summaryMonth        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

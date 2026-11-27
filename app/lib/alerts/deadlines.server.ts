@@ -13,6 +13,7 @@ import { formatMoney, reasonLabel } from "../disputes/evidence";
 import type { DisputeReason } from "../disputes/types";
 import { daysLeft } from "../disputes/views.server";
 import { emailConfigured, sendEmail } from "./email.server";
+import { runMonthlySummaries } from "./summary.server";
 
 /** "New" stage: any open dispute we haven't emailed about yet. */
 export const STAGE_NEW = 99;
@@ -35,10 +36,14 @@ export function dueText(days: number): string {
   return `due in ${days} days`;
 }
 
-export function disputeUrl(shopDomain: string, disputeId: string): string {
+/** A link into the embedded app. /admin/apps/<client id> redirects to it in the new admin. */
+export function adminAppUrl(shopDomain: string, path = ""): string {
   const key = process.env.SHOPIFY_API_KEY;
-  // /admin/apps/<client id> redirects to the embedded app in the new admin.
-  return key ? `https://${shopDomain}/admin/apps/${key}/app/disputes/${disputeId}` : `https://${shopDomain}/admin/apps`;
+  return key ? `https://${shopDomain}/admin/apps/${key}/app${path}` : `https://${shopDomain}/admin/apps`;
+}
+
+export function disputeUrl(shopDomain: string, disputeId: string): string {
+  return adminAppUrl(shopDomain, `/disputes/${disputeId}`);
 }
 
 interface AlertItem {
@@ -162,12 +167,16 @@ declare global {
 export function startAlertScheduler() {
   if (globalThis.__storepilotAlertTimer) return;
   if (process.env.NODE_ENV === "test" || process.env.VITEST || process.env.DEADLINE_ALERTS === "off") return;
-  const tick = () =>
-    runDeadlineAlerts()
-      .then((r) => {
-        if (r.emails || r.failures) console.log("[alerts]", JSON.stringify(r));
-      })
-      .catch((error) => console.error("[alerts] run failed", error));
+  const tick = async () => {
+    try {
+      const r = await runDeadlineAlerts();
+      if (r.emails || r.failures) console.log("[alerts]", JSON.stringify(r));
+      const m = await runMonthlySummaries();
+      if (m.emails || m.failures) console.log("[summary]", JSON.stringify(m));
+    } catch (error) {
+      console.error("[alerts] run failed", error);
+    }
+  };
   globalThis.__storepilotAlertTimer = setInterval(tick, HOUR);
   globalThis.__storepilotAlertTimer.unref?.();
   setTimeout(tick, 60_000).unref?.();

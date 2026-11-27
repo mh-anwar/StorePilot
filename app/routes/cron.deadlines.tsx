@@ -1,8 +1,9 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { timingSafeEqual } from "node:crypto";
 import { runDeadlineAlerts } from "../lib/alerts/deadlines.server";
+import { runMonthlySummaries } from "../lib/alerts/summary.server";
 
-// Runs deadline alerts on demand, for hosts that prefer an external scheduler
+// Runs deadline alerts (and the monthly summary, when due) on demand, for hosts that prefer an external scheduler
 // to the in-process hourly timer. Disabled unless CRON_SECRET is set; callers
 // send `Authorization: Bearer <CRON_SECRET>`. Safe to call often: each
 // dispute is emailed at most once per stage.
@@ -19,7 +20,9 @@ function authorized(request: Request): boolean {
 async function run(request: Request) {
   if (!process.env.CRON_SECRET) return new Response("Not found", { status: 404 });
   if (!authorized(request)) return new Response("Unauthorized", { status: 401 });
-  return Response.json(await runDeadlineAlerts());
+  const alerts = await runDeadlineAlerts();
+  const summaries = await runMonthlySummaries();
+  return Response.json({ ...alerts, summaries });
 }
 
 export const loader = ({ request }: LoaderFunctionArgs) => run(request);
