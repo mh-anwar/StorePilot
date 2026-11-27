@@ -160,3 +160,5 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
 - README and landing screenshots refreshed from a passing `pnpm walkthrough`.
 - **Plans page** shows the store's own numbers above the prices: money at stake,
   money lost to unanswered disputes, and money won back.
+- **FAQ structured data** (schema.org FAQPage JSON-LD) on the landing page, so
+  search results can show the questions directly.

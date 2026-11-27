@@ -71,6 +71,19 @@ const FAQ = [
   },
 ];
 
+/** schema.org FAQPage for search rich results. "<" is escaped so the JSON can't close the script tag. */
+export function faqJsonLd(): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  }).replace(/</g, "\\u003c");
+}
+
 export default function Index() {
   const { showForm } = useLoaderData<typeof loader>();
   const plans = [PLANS.free, PLANS.growth, PLANS.pro];
@@ -167,6 +180,8 @@ export default function Index() {
           ))}
         </div>
       </section>
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd() }} />
 
       <section id="install" className={styles.band} aria-labelledby="install-h">
         <h2 id="install-h" className={styles.h2}>
