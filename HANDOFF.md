@@ -28,6 +28,8 @@ Live work queue. Update after every step so the next agent can pick up.
 ## Up next (not started)
 
 
+- `pnpm walkthrough` failed once on "eight disputes need a response" right after Reset demo, then passed on rerun:
+  likely a timing flake (row count read before the reset reload settles). Wait for the row count instead.
 - Listing screenshots at 1600x900 (README ones were refreshed 2026-11-26 at 2720x1800)
   from the embedded app, per docs/APP_STORE_LISTING.md.
 

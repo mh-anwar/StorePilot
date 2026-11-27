@@ -57,6 +57,10 @@ async function main() {
     await settle(page);
     check(await page.getByText("Needs response").filter({ visible: true }).first().isVisible(), "inbox renders");
     check((await page.locator("s-table-row").count()) === 8, "eight disputes need a response");
+    check(
+      await page.getByText("Lost without a response").filter({ visible: true }).first().isVisible(),
+      "home shows money lost to unanswered disputes",
+    );
     await shot(page, "inbox");
 
     // A pack with a draft already written.
@@ -111,7 +115,29 @@ async function main() {
 
     await page.goto(`${BASE}/demo/settings`);
     await settle(page);
+    const checkbox = (label: string) =>
+      page.evaluate((l) => {
+        const el = [...document.querySelectorAll("s-checkbox")].find((c) => c.getAttribute("label")?.startsWith(l)) as
+          | (HTMLElement & { checked: boolean; disabled: boolean })
+          | undefined;
+        return el ? { checked: el.checked, disabled: el.disabled } : null;
+      }, label);
+    check((await checkbox("Email me about dispute deadlines"))?.disabled === false, "deadline alerts can be changed on Growth");
+    check((await checkbox("Draft a response as soon"))?.disabled === true, "auto-draft is locked below Pro");
     await shot(page, "settings");
+
+    // Public pages: landing, guides, sitemap. Hydration errors fail the run.
+    const pageErrors: string[] = [];
+    page.on("pageerror", (e) => pageErrors.push(String(e)));
+    await page.goto(`${BASE}/`);
+    await page.waitForLoadState("networkidle");
+    check(await page.getByRole("heading", { level: 1 }).isVisible(), "landing page renders");
+    await page.goto(`${BASE}/guides/product-not-received`);
+    await page.waitForLoadState("networkidle");
+    check((await page.getByRole("heading", { level: 1 }).textContent())?.includes("not received"), "guide page renders");
+    const sitemap = await (await page.request.get(`${BASE}/sitemap.xml`)).text();
+    check(sitemap.includes("/guides/fraudulent"), "sitemap lists the guides");
+    check(pageErrors.length === 0, `no page errors on public pages${pageErrors.length ? `: ${pageErrors[0]}` : ""}`);
 
     // Leave the demo tidy for the next visitor.
     await page.goto(`${BASE}/demo`);
