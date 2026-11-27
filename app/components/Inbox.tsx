@@ -1,6 +1,7 @@
 // Dispute inbox: the numbers that matter at the top, then every dispute
 // sorted by deadline.
 
+import { useEffect, useRef } from "react";
 import { useFetcher } from "react-router";
 import type { ActionResult } from "../lib/action-result";
 import type { DashboardStats, InboxRow, InboxTab } from "../lib/disputes/views.server";
@@ -25,6 +26,7 @@ export interface InboxData {
   rows: InboxRow[];
   activity: Array<{ id: string; kind: string; message: string; disputeId: string | null; createdAt: string }>;
   setup: SetupInput;
+  askForReview: boolean;
   isDemo: boolean;
 }
 
@@ -55,6 +57,7 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
   const cur = stats.currencyCode;
   const syncing = fetcher.state !== "idle" && fetcher.formData?.get("intent") === "sync";
   const guide = setupGuide(data.setup, base);
+  useReviewRequest(data.askForReview);
   const noDisputesYet = stats.open + stats.won + stats.lost === 0 && rows.length === 0 && tab === "open";
 
   return (
@@ -225,6 +228,31 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
       </s-stack>
     </s-page>
   );
+}
+
+/**
+ * After a won dispute, ask Shopify to show its App Store review modal once.
+ * Shopify decides whether it actually appears (rate limits, eligibility); we
+ * record the attempt either way so we don't ask on every page load.
+ */
+function useReviewRequest(ask: boolean) {
+  const recorder = useFetcher();
+  const asked = useRef(false);
+  useEffect(() => {
+    if (!ask || asked.current) return;
+    const reviews = typeof shopify === "undefined" ? undefined : shopify.reviews;
+    if (!reviews) return;
+    asked.current = true;
+    // Let the page settle first so the modal doesn't cover the merchant's first look.
+    const timer = setTimeout(() => {
+      reviews
+        .request()
+        .catch(() => undefined)
+        .finally(() => recorder.submit({ intent: "review_requested" }, { method: "post" }));
+    }, 4000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ask]);
 }
 
 export function capitalize(s: string) {

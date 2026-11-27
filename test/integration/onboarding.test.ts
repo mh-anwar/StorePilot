@@ -47,6 +47,18 @@ describe("setup guide", () => {
   });
 });
 
+describe("review request", () => {
+  it("is offered once a dispute is won, and not again right after it was requested", async () => {
+    const ctx = await makeStore();
+    expect((await inboxLoader(ctx, new Request("http://app.test/app"))).askForReview).toBe(false);
+    await syncDisputes(ctx); // fixtures include one won dispute
+    expect((await inboxLoader(ctx, new Request("http://app.test/app"))).askForReview).toBe(true);
+    expect(await inboxAction(ctx, post({ intent: "review_requested" }))).toMatchObject({ ok: true });
+    expect((await prisma.shop.findUniqueOrThrow({ where: { id: ctx.shop.id } })).reviewRequestedAt).toBeInstanceOf(Date);
+    expect((await inboxLoader(ctx, new Request("http://app.test/app"))).askForReview).toBe(false);
+  });
+});
+
 describe("lost without a response", () => {
   it("counts lost disputes that never had evidence sent, not ones we fought and lost", async () => {
     const ctx = await makeStore();

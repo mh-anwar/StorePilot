@@ -86,3 +86,19 @@ export function setupGuide(input: SetupInput, base: string): SetupGuide {
     visible: !input.setupDismissedAt && !requiredDone,
   };
 }
+
+// App Store reviews. We ask at the moment StorePilot has visibly paid for
+// itself (a dispute won), never before, and at most once every 90 days.
+// Shopify's own modal does the asking and applies its own rate limits; we never
+// gate features on a review or offer anything for one.
+export const REVIEW_INTERVAL_DAYS = 90;
+
+export function shouldAskForReview(
+  input: { won: number; reviewRequestedAt: string | null; isDemo: boolean },
+  now = new Date(),
+): boolean {
+  if (input.isDemo || input.won < 1) return false;
+  if (!input.reviewRequestedAt) return true;
+  const since = (now.getTime() - new Date(input.reviewRequestedAt).getTime()) / 86_400_000;
+  return since >= REVIEW_INTERVAL_DAYS;
+}

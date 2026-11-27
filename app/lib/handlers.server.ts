@@ -13,6 +13,7 @@ import { aiAvailable } from "./disputes/draft/ai.server";
 import { messageOf } from "./errors";
 import { emailConfigured } from "./alerts/email.server";
 import { privacyRequests } from "./gdpr.server";
+import { shouldAskForReview } from "./onboarding";
 import { refreshShopDetails } from "./shop.server";
 
 import type { ActionResult } from "./action-result";
@@ -36,6 +37,11 @@ export async function inboxLoader(ctx: StoreContext, request: Request) {
     stats,
     rows,
     activity,
+    askForReview: shouldAskForReview({
+      won: stats.won,
+      reviewRequestedAt: ctx.shop.reviewRequestedAt?.toISOString() ?? null,
+      isDemo: ctx.isDemo,
+    }),
     setup: {
       lastSyncedAt: ctx.shop.lastSyncedAt?.toISOString() ?? null,
       supportEmail: ctx.shop.supportEmail,
@@ -55,6 +61,10 @@ export async function inboxAction(ctx: StoreContext, request: Request): Promise<
     if (intent === "sync") {
       const r = await syncDisputes(ctx);
       return { ok: true, message: `Synced ${r.total} disputes (${r.created} new, ${r.updated} changed).` };
+    }
+    if (intent === "review_requested") {
+      ctx.shop = await prisma.shop.update({ where: { id: ctx.shop.id }, data: { reviewRequestedAt: new Date() } });
+      return { ok: true, message: "" };
     }
     if (intent === "dismiss_setup" || intent === "show_setup") {
       ctx.shop = await prisma.shop.update({

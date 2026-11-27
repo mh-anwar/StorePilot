@@ -43,6 +43,8 @@ model Shop {
   lastSyncedAt  DateTime?
   // When the merchant hid the first-run setup guide on the home page.
   setupDismissedAt DateTime?
+  // Last time we asked App Bridge to show the App Store review modal.
+  reviewRequestedAt DateTime?
 
   // Merchant settings
   refundPolicy        String?
