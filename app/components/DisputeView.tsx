@@ -52,6 +52,8 @@ export interface DetailData {
   shopDomain: string;
   aiDrafts: boolean;
   planAllowsAi: boolean;
+  outOfPacks: boolean;
+  packsLimit: number | null;
   isDemo: boolean;
 }
 
@@ -134,8 +136,22 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
       ) : null}
 
       <s-stack gap="base">
-        <Flash result={fetcher.data} />
+        <Flash result={fetcher.data} base={base} />
         <StatusBanner data={data} />
+        {editable && data.outOfPacks && !fetcher.data ? (
+          <s-banner tone="warning" heading="Your evidence packs for this month are used up">
+            <s-stack gap="small-200">
+              <s-text>
+                {`This dispute is for ${formatMoney(d.amountCents, d.currencyCode)} and your plan includes ${data.packsLimit ?? 0} packs a month. Growth has 30 and Pro is unlimited, both with a 7-day free trial, so you can still answer this one before its deadline.`}
+              </s-text>
+              <s-stack direction="inline">
+                <s-button href={`${base}/billing`} variant="primary">
+                  See plans
+                </s-button>
+              </s-stack>
+            </s-stack>
+          </s-banner>
+        ) : null}
 
         <s-query-container>
         <s-grid gridTemplateColumns="@container (inline-size > 860px) 2fr 1fr, 1fr" gap="base">

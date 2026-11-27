@@ -1,7 +1,7 @@
 // First-run: the setup guide's inputs, hiding/restoring it, and the
 // "lost without a response" number on the home page.
 import { beforeEach, describe, expect, it } from "vitest";
-import { inboxAction, inboxLoader } from "../../app/lib/handlers.server";
+import { detailAction, detailLoader, inboxAction, inboxLoader } from "../../app/lib/handlers.server";
 import { syncDisputes } from "../../app/lib/disputes/sync.server";
 import { dashboardStats } from "../../app/lib/disputes/views.server";
 import { setupGuide } from "../../app/lib/onboarding";
@@ -56,6 +56,29 @@ describe("review request", () => {
     expect(await inboxAction(ctx, post({ intent: "review_requested" }))).toMatchObject({ ok: true });
     expect((await prisma.shop.findUniqueOrThrow({ where: { id: ctx.shop.id } })).reviewRequestedAt).toBeInstanceOf(Date);
     expect((await inboxLoader(ctx, new Request("http://app.test/app"))).askForReview).toBe(false);
+  });
+});
+
+describe("out of packs", () => {
+  it("flags the dispute page and returns a plan_limit code the UI can offer an upgrade for", async () => {
+    const ctx = await makeStore({ plan: "free" });
+    await syncDisputes(ctx);
+    const open = await prisma.dispute.findMany({ where: { shopId: ctx.shop.id, status: "NEEDS_RESPONSE" } });
+    const build = (id: string) => detailAction(ctx, id, new Request("http://app.test/x", { method: "POST", body: new URLSearchParams({ intent: "build" }) }));
+
+    expect((await detailLoader(ctx, open[3].id)).outOfPacks).toBe(false);
+    for (const d of open.slice(0, 3)) expect(await build(d.id)).toMatchObject({ ok: true });
+
+    const blocked = await detailLoader(ctx, open[3].id);
+    expect(blocked).toMatchObject({ outOfPacks: true, packsLimit: 3 });
+    expect(await build(open[3].id)).toMatchObject({ ok: false, code: "plan_limit" });
+    // A dispute that already has a pack isn't blocked: rebuilding is free.
+    expect((await detailLoader(ctx, open[0].id)).outOfPacks).toBe(false);
+
+    const pro = await makeStore({ plan: "pro", domain: "pro.myshopify.com" });
+    await syncDisputes(pro);
+    const proOpen = await prisma.dispute.findFirstOrThrow({ where: { shopId: pro.shop.id, status: "NEEDS_RESPONSE" } });
+    expect(await detailLoader(pro, proOpen.id)).toMatchObject({ outOfPacks: false, packsLimit: null });
   });
 });
 

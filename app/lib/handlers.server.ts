@@ -6,11 +6,11 @@ import { planFor } from "./billing/plans";
 import type { StoreContext } from "./context.server";
 import { buildPack, decide, draftEvidence, saveEdits, sendToShopify } from "./disputes/pack.server";
 import { fieldsFromForm } from "./disputes/evidence-input";
-import { draftView, latestDraft } from "./disputes/records.server";
+import { canBuildPack, draftView, latestDraft } from "./disputes/records.server";
 import { syncDisputes } from "./disputes/sync.server";
 import { dashboardStats, disputeDetail, listDisputes, recentActivity, type InboxTab } from "./disputes/views.server";
 import { aiAvailable } from "./disputes/draft/ai.server";
-import { messageOf } from "./errors";
+import { messageOf, PlanLimitError } from "./errors";
 import { emailConfigured } from "./alerts/email.server";
 import { privacyRequests } from "./gdpr.server";
 import { shouldAskForReview } from "./onboarding";
@@ -82,8 +82,12 @@ export async function inboxAction(ctx: StoreContext, request: Request): Promise<
 export async function detailLoader(ctx: StoreContext, id: string) {
   const detail = await disputeDetail(ctx, id);
   const plan = planFor(ctx.shop.plan);
+  const allowance = await canBuildPack(ctx.shop);
   return {
     ...detail,
+    // True when building this dispute's first pack would hit the monthly limit.
+    outOfPacks: !detail.snapshot && !allowance.ok,
+    packsLimit: Number.isFinite(allowance.limit) ? allowance.limit : null,
     shopDomain: ctx.shop.domain,
     aiDrafts: plan.aiDrafts && aiAvailable(),
     planAllowsAi: plan.aiDrafts,
@@ -97,8 +101,13 @@ export async function detailAction(ctx: StoreContext, id: string, request: Reque
   try {
     switch (intent) {
       case "build": {
-        const { assessment } = await buildPack(ctx, id);
-        return { ok: true, message: `Evidence pack built: ${assessment.score}/100.` };
+        try {
+          const { assessment } = await buildPack(ctx, id);
+          return { ok: true, message: `Evidence pack built: ${assessment.score}/100.` };
+        } catch (error) {
+          if (error instanceof PlanLimitError) return { ok: false, error: error.message, code: "plan_limit" };
+          throw error;
+        }
       }
       case "draft": {
         const draft = await draftEvidence(ctx, id);
