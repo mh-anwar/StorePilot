@@ -17,12 +17,13 @@ Live work queue. Update after every step so the next agent can pick up.
 - Hydration failures on /demo and /privacy fixed (quotes in inline `<style>`); guarded by
   `test/unit/inline-styles.test.ts`. Was present on `main` too.
 - `docs/GROWTH_PLAN.md` with changelog.
+- Upgrade prompt on the dispute page when packs are used up (`outOfPacks` in detailLoader, `code: "plan_limit"` on ActionResult, Flash offers See plans).
 
 ## In progress
 - (none)
 
 ## Up next (not started)
-- Upgrade prompt when a Free store hits its pack limit on a dispute worth more than the Growth price.
+
 - Monthly summary email ("2 disputes answered, $410 recovered") reusing `app/lib/alerts/email.server.ts`.
 - Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings
   (`pnpm walkthrough`; README screenshots predate the setup guide).
