@@ -19,7 +19,7 @@ Stopped 2026-11-26 ~19:36 EST at the planned hard stop. Everything below is comm
   `code: "plan_limit"` on ActionResult, Flash offers "See plans").
 - Plans page banner with the store's own numbers (`plansRecord` in views.server.ts, `recordLine` in PlansView.tsx).
 - Public landing page rewritten (problem, steps, pricing from PLANS, FAQ + FAQPage JSON-LD, install form, meta/OG tags, `/og.png`).
-- Public guides `/guides`, `/guides/<slug>` (`app/lib/guides.ts`), `/sitemap.xml`, `/robots.txt`.
+- Public guides `/guides`, `/guides/<slug>` (`app/lib/guides.ts`, Article JSON-LD), `/sitemap.xml`, `/robots.txt`.
 - App Store listing copy in `docs/APP_STORE_LISTING.md`, limits checked by `test/unit/listing.test.ts`.
 - Demo fixture dispute 876 (#1019) is now an expired, unanswered loss, so the demo shows the hook.
 - Bug fixes (both also on `main`): quotes in inline `<style>` broke hydration on /demo and /privacy
@@ -42,4 +42,4 @@ Stopped 2026-11-26 ~19:36 EST at the planned hard stop. Everything below is comm
 ## Checks
 `pnpm typecheck && pnpm test && pnpm test:integration && pnpm test:e2e`
 Browser: `pnpm build && PORT=3457 pnpm start`, then `BASE_URL=http://127.0.0.1:3457 pnpm walkthrough`.
-Last run: typecheck clean; unit 100, integration 55, e2e 12 pass; walkthrough 17/17.
+Last run: typecheck clean; unit 101, integration 55, e2e 12 pass; walkthrough 17/17.
