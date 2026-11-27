@@ -56,6 +56,8 @@ async function main() {
     await page.waitForURL(`${BASE}/demo`);
     await settle(page);
     check(await page.getByText("Needs response").filter({ visible: true }).first().isVisible(), "inbox renders");
+    // The reset reloads the inbox; wait for the rows rather than counting mid-render.
+    await page.locator("s-table-row").nth(7).waitFor({ timeout: 15_000 });
     check((await page.locator("s-table-row").count()) === 8, "eight disputes need a response");
     check(
       await page.getByText("Lost without a response").filter({ visible: true }).first().isVisible(),

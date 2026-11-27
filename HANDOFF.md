@@ -22,14 +22,15 @@ Live work queue. Update after every step so the next agent can pick up.
 - Monthly summary email (`app/lib/alerts/summary.server.ts`, `Shop.monthlySummary`/`summaryMonth`, migration `20261126193000_monthly_summary`), run by the same hourly scheduler and `/cron/deadlines`.
 - Boolean props on s-* elements fixed (`cond || undefined`), guarded by `test/unit/web-component-booleans.test.ts`; walkthrough passes.
 
+- Walkthrough extended (lost stat, settings switches, landing, guide, sitemap, no page errors) and its
+  row-count flake fixed by waiting for the rows; passed 3 runs in a row.
+
 ## In progress
 - (none)
 
 ## Up next (not started)
 
 
-- `pnpm walkthrough` failed once on "eight disputes need a response" right after Reset demo, then passed on rerun:
-  likely a timing flake (row count read before the reset reload settles). Wait for the row count instead.
 - Listing screenshots at 1600x900 (README ones were refreshed 2026-11-26 at 2720x1800)
   from the embedded app, per docs/APP_STORE_LISTING.md.
 
