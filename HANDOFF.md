@@ -11,6 +11,7 @@ Live work queue. Update after every step so the next agent can pick up.
   migration `20261126191000_deadline_alerts`, Settings section). Resend via env vars; docs in INSTALL.md.
 - Public landing page rewritten (problem, steps, pricing, FAQ, install form, meta/OG tags).
 - App Store listing copy in `docs/APP_STORE_LISTING.md`, limits checked by `test/unit/listing.test.ts`.
+- App Store review request via App Bridge after the first won dispute (`useReviewRequest` in Inbox.tsx, `Shop.reviewRequestedAt`).
 
 ## In progress
 - `docs/GROWTH_PLAN.md` + changelog.
@@ -21,7 +22,7 @@ Live work queue. Update after every step so the next agent can pick up.
 - React hydration warnings (#418/#425) on `/demo` pages in production build; seen in headless Chrome.
   Probably Polaris web components touching the DOM before hydration. Not checked against `main`.
 - Regenerate listing screenshots at 1600x900 including the setup guide and alerts settings.
-- In-app review prompt after a dispute is won (ask for an App Store review at the happiest moment).
+
 
 ## Checks
 `pnpm typecheck && pnpm test && pnpm test:integration && pnpm test:e2e`
