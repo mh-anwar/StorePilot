@@ -149,3 +149,15 @@ export const GUIDES: Guide[] = [
 export function guideBySlug(slug: string | undefined): Guide | undefined {
   return GUIDES.find((g) => g.slug === slug);
 }
+
+/** schema.org Article for a guide. "<" is escaped so the JSON can't close its script tag. */
+export function guideJsonLd(guide: Guide, url: string): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: guide.title,
+    description: guide.description,
+    url,
+    publisher: { "@type": "Organization", name: "StorePilot" },
+  }).replace(/</g, "\\u003c");
+}

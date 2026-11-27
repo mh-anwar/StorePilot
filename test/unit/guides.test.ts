@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DISPUTE_REASONS } from "../../app/lib/disputes/types";
-import { guideBySlug, GUIDES } from "../../app/lib/guides";
+import { guideBySlug, guideJsonLd, GUIDES } from "../../app/lib/guides";
 import { sitemapXml } from "../../app/routes/sitemap[.]xml";
 
 describe("chargeback guides", () => {
@@ -30,4 +30,11 @@ describe("chargeback guides", () => {
     for (const g of GUIDES) expect(xml).toContain(`<loc>https://storepilot.example/guides/${g.slug}</loc>`);
     expect(xml).not.toContain("/app");
   });
+});
+
+it("guide structured data is an Article that can't break out of its script tag", () => {
+  const g = { ...GUIDES[0], title: "A </script> title" };
+  const raw = guideJsonLd(g, "https://storepilot.example/guides/x");
+  expect(raw).not.toContain("<");
+  expect(JSON.parse(raw)).toMatchObject({ "@type": "Article", headline: "A </script> title" });
 });

@@ -1,12 +1,17 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { guideBySlug, GUIDES } from "../lib/guides";
+import { guideBySlug, guideJsonLd, GUIDES } from "../lib/guides";
 import styles from "./_index/styles.module.css";
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const guide = guideBySlug(params.slug);
   if (!guide) throw new Response("Not found", { status: 404 });
-  return { guide, others: GUIDES.filter((g) => g.slug !== guide.slug).map((g) => ({ slug: g.slug, title: g.title })) };
+  const origin = (process.env.SHOPIFY_APP_URL || new URL(request.url).origin).replace(/\/$/, "");
+  return {
+    guide,
+    jsonLd: guideJsonLd(guide, `${origin}/guides/${guide.slug}`),
+    others: GUIDES.filter((g) => g.slug !== guide.slug).map((g) => ({ slug: g.slug, title: g.title })),
+  };
 };
 
 export const meta: MetaFunction<typeof loader> = ({ data }) =>
@@ -21,9 +26,10 @@ export const meta: MetaFunction<typeof loader> = ({ data }) =>
     : [{ title: "Guide not found | StorePilot" }];
 
 export default function GuidePage() {
-  const { guide, others } = useLoaderData<typeof loader>();
+  const { guide, others, jsonLd } = useLoaderData<typeof loader>();
   return (
     <main className={styles.page}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
       <article className={styles.section}>
         <p className={styles.eyebrow}>
           <a className={styles.link} href="/guides">
