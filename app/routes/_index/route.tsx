@@ -198,6 +198,9 @@ export default function Index() {
         <a className={styles.link} href="/demo">
           Demo
         </a>
+        <a className={styles.link} href="/guides">
+          Chargeback guides
+        </a>
         <a className={styles.link} href="/privacy">
           Privacy
         </a>
