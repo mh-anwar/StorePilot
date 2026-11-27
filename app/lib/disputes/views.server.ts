@@ -69,6 +69,7 @@ export async function listDisputes(ctx: StoreContext, tab: InboxTab = "open"): P
 }
 
 export interface DashboardStats {
+  total: number; // every dispute on record, any status
   open: number;
   dueSoon: number; // open, due within 3 days
   atStakeCents: number; // open amount
@@ -115,6 +116,7 @@ export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats>
   const used = await packsUsed(ctx.shop.id);
   const unlimited = !Number.isFinite(plan.packsPerMonth);
   return {
+    total: rows.length,
     open,
     dueSoon,
     atStakeCents: atStake,

@@ -58,7 +58,7 @@ export function Inbox({ data, base }: { data: InboxData; base: string }) {
   const syncing = fetcher.state !== "idle" && fetcher.formData?.get("intent") === "sync";
   const guide = setupGuide(data.setup, base);
   useReviewRequest(data.askForReview);
-  const noDisputesYet = stats.open + stats.won + stats.lost === 0 && rows.length === 0 && tab === "open";
+  const noDisputesYet = stats.total === 0 && tab === "open";
 
   return (
     <s-page heading="Disputes" inlineSize="large">

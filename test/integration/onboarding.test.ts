@@ -82,6 +82,18 @@ describe("out of packs", () => {
   });
 });
 
+describe("empty state", () => {
+  it("counts every dispute, so a store with only submitted ones isn't told it has none", async () => {
+    const ctx = await makeStore();
+    expect((await dashboardStats(ctx)).total).toBe(0);
+    await syncDisputes(ctx);
+    await prisma.dispute.updateMany({ where: { shopId: ctx.shop.id }, data: { status: "UNDER_REVIEW" } });
+    const s = await dashboardStats(ctx);
+    expect(s.open + s.won + s.lost).toBe(0);
+    expect(s.total).toBeGreaterThan(0);
+  });
+});
+
 describe("lost without a response", () => {
   it("counts lost disputes that never had evidence sent, not ones we fought and lost", async () => {
     const ctx = await makeStore();
