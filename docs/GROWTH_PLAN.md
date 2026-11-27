@@ -146,7 +146,7 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
   field limits and in step with plan prices.
 - **Upgrade prompt** on the dispute page when the month's packs are used up, with
   the dispute's amount and a link to Plans; the failed build offers the same link.
-- **Chargeback guides** at `/guides` (six reason groups), `/sitemap.xml` and
+- **Chargeback guides** at `/guides` (seven reason groups, incl. general/customer initiated), `/sitemap.xml` and
   `/robots.txt`, linked from the landing page.
 - **Fixed** hydration failures on every `/demo` and `/privacy` page load (quotes in
   inline `<style>` blocks), present on `main` too.

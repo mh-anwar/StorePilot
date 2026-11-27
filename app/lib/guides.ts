@@ -144,6 +144,28 @@ export const GUIDES: Guide[] = [
     accept: "If it really was charged twice and you haven't refunded, accept the dispute rather than refunding as well.",
     mistakes: ["Not explaining which order each charge belongs to."],
   },
+  {
+    slug: "general-dispute",
+    reasons: ["GENERAL", "CUSTOMER_INITIATED"],
+    title: "How to answer a “general” chargeback on Shopify",
+    description:
+      "The dispute reason is “general” or “customer initiated”, so the claim is vague. What to send so the bank sees a complete, legitimate order.",
+    claim:
+      "The bank didn't say exactly what the cardholder is unhappy about. Without a specific claim to rebut, the job is to show the whole order was legitimate, delivered and handled fairly.",
+    evidence: [
+      { item: "Proof of delivery", why: "The most general proof that the customer got what they paid for." },
+      { item: "AVS and CVV results", why: "Shows the real cardholder placed the order." },
+      { item: "Customer history", why: "Earlier undisputed orders support a legitimate customer relationship." },
+      { item: "Your refund policy", why: "Shows the customer had a way to resolve a problem with you directly." },
+      { item: "The product description", why: "Lets the bank see what was sold, in case the real complaint is about the product." },
+    ],
+    accept:
+      "If you can't find any message from the customer and the order has no tracking, a vague dispute is hard to win. On small amounts, accepting is often the better use of your time.",
+    mistakes: [
+      "Guessing at the customer's complaint and arguing only that point.",
+      "Not checking your inbox: the customer may have written to you first, and that message often explains the dispute.",
+    ],
+  },
 ];
 
 export function guideBySlug(slug: string | undefined): Guide | undefined {
