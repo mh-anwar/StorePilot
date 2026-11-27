@@ -69,11 +69,15 @@ export async function listDisputes(ctx: StoreContext, tab: InboxTab = "open"): P
 }
 
 export interface DashboardStats {
+  total: number; // every dispute on record, any status
   open: number;
   dueSoon: number; // open, due within 3 days
   atStakeCents: number; // open amount
   recoveredCents: number; // won amount
   lostCents: number;
+  /** Lost disputes that never got a response: the money StorePilot exists to save. */
+  unanswered: number;
+  unansweredCents: number;
   won: number;
   lost: number;
   winRate: number | null; // 0..100, of decided disputes
@@ -85,10 +89,11 @@ export interface DashboardStats {
 export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats> {
   const rows = await prisma.dispute.findMany({
     where: { shopId: ctx.shop.id },
-    select: { status: true, amountCents: true, evidenceDueBy: true, decision: true },
+    select: { status: true, amountCents: true, evidenceDueBy: true, decision: true, evidenceSentOn: true },
   });
   const now = new Date();
   let open = 0, dueSoon = 0, atStake = 0, recovered = 0, lostCents = 0, won = 0, lost = 0;
+  let unanswered = 0, unansweredCents = 0;
   for (const r of rows) {
     if (r.status === "NEEDS_RESPONSE") {
       open++;
@@ -101,17 +106,24 @@ export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats>
     } else if (r.status === "LOST") {
       lost++;
       lostCents += r.amountCents;
+      if (!r.evidenceSentOn) {
+        unanswered++;
+        unansweredCents += r.amountCents;
+      }
     }
   }
   const plan = planFor(ctx.shop.plan);
   const used = await packsUsed(ctx.shop.id);
   const unlimited = !Number.isFinite(plan.packsPerMonth);
   return {
+    total: rows.length,
     open,
     dueSoon,
     atStakeCents: atStake,
     recoveredCents: recovered,
     lostCents,
+    unanswered,
+    unansweredCents,
     won,
     lost,
     winRate: won + lost ? Math.round((won / (won + lost)) * 100) : null,
@@ -126,6 +138,20 @@ export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats>
     lastSyncedAt: ctx.shop.lastSyncedAt?.toISOString() ?? null,
   };
 }
+
+/** The store's own numbers, shown on the Plans page as the reason to pick a plan. */
+export function plansRecord(stats: DashboardStats) {
+  return {
+    recoveredCents: stats.recoveredCents,
+    won: stats.won,
+    unanswered: stats.unanswered,
+    unansweredCents: stats.unansweredCents,
+    atStakeCents: stats.atStakeCents,
+    open: stats.open,
+    currencyCode: stats.currencyCode,
+  };
+}
+export type PlansRecord = ReturnType<typeof plansRecord>;
 
 export async function disputeDetail(ctx: StoreContext, disputeId: string) {
   const row = await prisma.dispute.findFirst({

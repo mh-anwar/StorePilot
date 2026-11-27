@@ -13,10 +13,16 @@ export interface SettingsData {
     shippingPolicy: string;
     autoDraft: boolean;
     minFightAmount: number;
+    deadlineAlerts: boolean;
+    monthlySummary: boolean;
+    alertEmail: string;
+    ownerEmail: string;
     currencyCode: string;
     lastSyncedAt: string | null;
   };
   plan: string;
+  planHasAlerts: boolean;
+  emailConfigured: boolean;
   aiConfigured: boolean;
   privacy: Array<{ id: string; topic: string; status: string; createdAt: string; hasExport: boolean }>;
   isDemo: boolean;
@@ -36,6 +42,9 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
     shippingPolicy: data.shop.shippingPolicy,
     minFightAmount: String(data.shop.minFightAmount),
     autoDraft: data.shop.autoDraft,
+    deadlineAlerts: data.shop.deadlineAlerts,
+    monthlySummary: data.shop.monthlySummary,
+    alertEmail: data.shop.alertEmail,
   });
   const busy = fetcher.state !== "idle";
   const set = (key: keyof typeof form) => (e: Event) => {
@@ -51,10 +60,16 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
       <s-button
         slot="primary-action"
         variant="primary"
-        loading={busy && fetcher.formData?.get("intent") === "save"}
+        loading={(busy && fetcher.formData?.get("intent") === "save") || undefined}
         onClick={() =>
           fetcher.submit(
-            { intent: "save", ...form, autoDraft: form.autoDraft ? "true" : "false" },
+            {
+              intent: "save",
+              ...form,
+              autoDraft: form.autoDraft ? "true" : "false",
+              deadlineAlerts: form.deadlineAlerts ? "true" : "false",
+              monthlySummary: form.monthlySummary ? "true" : "false",
+            },
             { method: "post" },
           )
         }
@@ -74,7 +89,7 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
             <s-text-area label="Shipping policy" rows={5} value={form.shippingPolicy} onInput={set("shippingPolicy")} />
             <s-button
               variant="tertiary"
-              loading={busy && fetcher.formData?.get("intent") === "reload_policies"}
+              loading={(busy && fetcher.formData?.get("intent") === "reload_policies") || undefined}
               onClick={() => fetcher.submit({ intent: "reload_policies" }, { method: "post" })}
             >
               Reload from my store
@@ -99,8 +114,8 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
             />
             <s-checkbox
               label="Draft a response as soon as a dispute arrives (Pro)"
-              checked={form.autoDraft}
-              disabled={data.plan !== "pro"}
+              checked={(form.autoDraft) || undefined}
+              disabled={(data.plan !== "pro") || undefined}
               onChange={(e) => {
                 const checked = e.currentTarget.checked;
                 setForm((f) => ({ ...f, autoDraft: checked }));
@@ -111,6 +126,65 @@ export function SettingsView({ data, base }: { data: SettingsData; base: string 
                 ? "Claude drafting is configured on this server."
                 : "No Anthropic API key is configured on this server, so drafts use StorePilot's templates."}
             </s-text>
+          </s-stack>
+        </s-section>
+
+        <s-section heading="Emails">
+          <s-stack gap="base">
+            <s-paragraph color="subdued">
+              Deadline alerts: an email when a new dispute arrives and again 7, 3 and 1 day before its deadline, so
+              nothing expires unanswered. Disputes you&apos;ve accepted or already submitted are left out.
+            </s-paragraph>
+            {!data.emailConfigured ? (
+              <s-banner tone="warning">
+                Emails aren&apos;t switched on for this StorePilot server yet, so none will be sent. The deadline
+                banner on the Disputes page still works.
+              </s-banner>
+            ) : null}
+            {!data.planHasAlerts ? (
+              <s-banner tone="info">
+                Deadline alerts come with the Growth and Pro plans. The monthly summary is on every plan. <s-link href={`${base}/billing`}>Compare plans</s-link>
+              </s-banner>
+            ) : null}
+            <s-checkbox
+              label="Email me about dispute deadlines"
+              checked={(form.deadlineAlerts) || undefined}
+              disabled={(!data.planHasAlerts) || undefined}
+              onChange={(e) => {
+                const checked = e.currentTarget.checked;
+                setForm((f) => ({ ...f, deadlineAlerts: checked }));
+              }}
+            />
+            <s-checkbox
+              label="Monthly summary: disputes, responses and money recovered last month"
+              checked={(form.monthlySummary) || undefined}
+              onChange={(e) => {
+                const checked = e.currentTarget.checked;
+                setForm((f) => ({ ...f, monthlySummary: checked }));
+              }}
+            />
+            <s-email-field
+              label="Send emails to"
+              placeholder={data.shop.ownerEmail || "you@example.com"}
+              details={
+                data.shop.ownerEmail
+                  ? `Leave empty to use your store's email (${data.shop.ownerEmail}).`
+                  : "Your store has no email on file, so add one here to get these emails."
+              }
+              value={form.alertEmail}
+              onInput={set("alertEmail")}
+            />
+            {data.emailConfigured ? (
+              <s-stack direction="inline">
+                <s-button
+                  variant="tertiary"
+                  loading={(busy && fetcher.formData?.get("intent") === "test_email") || undefined}
+                  onClick={() => fetcher.submit({ intent: "test_email" }, { method: "post" })}
+                >
+                  Send a test email
+                </s-button>
+              </s-stack>
+            ) : null}
           </s-stack>
         </s-section>
 

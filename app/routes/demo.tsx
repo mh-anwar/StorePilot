@@ -28,7 +28,7 @@ export default function DemoLayout() {
         .sp-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 20px; background: #1a1a1a; color: #e3e3e3; font: 13px/1.4 Inter, system-ui, sans-serif; }
         .sp-bar strong { color: #fff; font-size: 14px; }
         .sp-bar a { color: #e3e3e3; text-decoration: none; padding: 4px 8px; border-radius: 6px; }
-        .sp-bar a[aria-current="page"], .sp-bar a:hover { background: #303030; color: #fff; }
+        .sp-bar a[aria-current=page], .sp-bar a:hover { background: #303030; color: #fff; }
         .sp-bar .sp-grow { flex: 1; }
         .sp-bar button { font: inherit; color: #1a1a1a; background: #e3e3e3; border: 0; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
         .sp-bar button:hover { background: #fff; }

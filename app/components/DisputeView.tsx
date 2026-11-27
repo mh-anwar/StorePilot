@@ -7,6 +7,7 @@ import type { ActionResult } from "../lib/action-result";
 import { FIELD_LABELS, TEXT_FIELDS } from "../lib/disputes/evidence-input";
 import type { DraftView } from "../lib/disputes/records.server";
 import type { Assessment, EvidenceTextField, OrderSnapshot } from "../lib/disputes/types";
+import { guideBySlug, guideForReason } from "../lib/guides";
 import { Flash } from "./Flash";
 import { capitalize } from "./Inbox";
 import {
@@ -52,6 +53,8 @@ export interface DetailData {
   shopDomain: string;
   aiDrafts: boolean;
   planAllowsAi: boolean;
+  outOfPacks: boolean;
+  packsLimit: number | null;
   isDemo: boolean;
 }
 
@@ -66,6 +69,10 @@ const REASON_FIELDS: Record<string, EvidenceTextField[]> = {
 };
 
 const CUSTOMER_FIELDS: EvidenceTextField[] = ["customerFirstName", "customerLastName", "customerEmailAddress"];
+
+/** Inquiries get the inquiry guide; chargebacks get the guide for their reason. */
+const guideFor = (d: { type: string; reason: string }) =>
+  d.type === "INQUIRY" ? guideBySlug("inquiry") : guideForReason(d.reason);
 
 const STATUS_ICON = { strong: "check-circle", weak: "alert-circle", missing: "x-circle" } as const;
 const STATUS_TONE_ITEM = { strong: "success", weak: "caution", missing: "critical" } as const;
@@ -123,19 +130,33 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
         Disputes
       </s-link>
       {editable && !snapshot ? (
-        <s-button slot="primary-action" variant="primary" loading={busy && pending === "build"} onClick={() => run("build")}>
+        <s-button slot="primary-action" variant="primary" loading={(busy && pending === "build") || undefined} onClick={() => run("build")}>
           Build evidence pack
         </s-button>
       ) : null}
       {editable && snapshot ? (
-        <s-button slot="secondary-actions" loading={busy && pending === "build"} onClick={() => run("build")}>
+        <s-button slot="secondary-actions" loading={(busy && pending === "build") || undefined} onClick={() => run("build")}>
           Refresh evidence
         </s-button>
       ) : null}
 
       <s-stack gap="base">
-        <Flash result={fetcher.data} />
+        <Flash result={fetcher.data} base={base} />
         <StatusBanner data={data} />
+        {editable && data.outOfPacks && !fetcher.data ? (
+          <s-banner tone="warning" heading="Your evidence packs for this month are used up">
+            <s-stack gap="small-200">
+              <s-text>
+                {`This dispute is for ${formatMoney(d.amountCents, d.currencyCode)} and your plan includes ${data.packsLimit ?? 0} packs a month. Growth has 30 and Pro is unlimited, both with a 7-day free trial, so you can still answer this one before its deadline.`}
+              </s-text>
+              <s-stack direction="inline">
+                <s-button href={`${base}/billing`} variant="primary">
+                  See plans
+                </s-button>
+              </s-stack>
+            </s-stack>
+          </s-banner>
+        ) : null}
 
         <s-query-container>
         <s-grid gridTemplateColumns="@container (inline-size > 860px) 2fr 1fr, 1fr" gap="base">
@@ -156,7 +177,14 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                     ))}
                   </s-unordered-list>
                   <s-divider />
-                  <s-heading>What the bank will look for</s-heading>
+                  <s-stack direction="inline" justifyContent="space-between" alignItems="center">
+                    <s-heading>What the bank will look for</s-heading>
+                    {guideFor(d) ? (
+                      <s-link href={`/guides/${guideFor(d)!.slug}`} target="_blank">
+                        How these disputes are judged
+                      </s-link>
+                    ) : null}
+                  </s-stack>
                   <s-stack gap="small-200">
                     {assessment.checklist.map((item) => (
                       <s-stack key={item.key} direction="inline" gap="small-200" alignItems="start">
@@ -191,7 +219,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                         ? "StorePilot will write a rebuttal from the evidence pack using its built-in templates (add an Anthropic API key to get Claude-written drafts)."
                         : "StorePilot will write a rebuttal from the evidence pack using its built-in templates. Growth and Pro plans get drafts written by Claude."}
                   </s-paragraph>
-                  <s-button variant="primary" loading={busy && pending === "draft"} onClick={() => run("draft")}>
+                  <s-button variant="primary" loading={(busy && pending === "draft") || undefined} onClick={() => run("draft")}>
                     Draft the response
                   </s-button>
                 </s-stack>
@@ -222,7 +250,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                       name={key}
                       rows={key === "uncategorizedText" ? 14 : 4}
                       value={fields[key] ?? ""}
-                      readOnly={!editable || busy}
+                      readOnly={(!editable || busy) || undefined}
                       maxLength={key === "uncategorizedText" ? 4500 : 2000}
                       onInput={(e) => {
                         const value = e.currentTarget.value;
@@ -238,7 +266,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                         label={FIELD_LABELS[key]}
                         name={key}
                         value={fields[key] ?? ""}
-                        readOnly={!editable || busy}
+                        readOnly={(!editable || busy) || undefined}
                         onInput={(e) => {
                           const value = e.currentTarget.value;
                           setFields((f) => ({ ...f, [key]: value }));
@@ -269,7 +297,7 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                               {`Shopify sends it to the cardholder's bank for ${formatMoney(d.amountCents, d.currencyCode)}. A dispute gets one submission: you can't change or add evidence afterwards.`}
                             </s-paragraph>
                             <s-stack direction="inline" gap="small-200">
-                              <s-button variant="primary" tone="critical" loading={busy && pending === "submit"} onClick={() => run("submit", true)}>
+                              <s-button variant="primary" tone="critical" loading={(busy && pending === "submit") || undefined} onClick={() => run("submit", true)}>
                                 Submit to the bank
                               </s-button>
                               <s-button onClick={() => setConfirming(false)}>Cancel</s-button>
@@ -278,18 +306,18 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
                         </s-banner>
                       ) : (
                         <s-stack direction="inline" gap="small-200">
-                          <s-button variant="primary" disabled={!fields.uncategorizedText?.trim() || busy} onClick={() => setConfirming(true)}>
+                          <s-button variant="primary" disabled={(!fields.uncategorizedText?.trim() || busy) || undefined} onClick={() => setConfirming(true)}>
                             Submit to the bank…
                           </s-button>
-                          <s-button loading={busy && pending === "save_shopify"} onClick={() => run("save_shopify", true)}>
+                          <s-button loading={(busy && pending === "save_shopify") || undefined} onClick={() => run("save_shopify", true)}>
                             Save to Shopify
                           </s-button>
-                          <s-button disabled={!dirty} loading={busy && pending === "save"} onClick={() => run("save", true)}>
+                          <s-button disabled={(!dirty) || undefined} loading={(busy && pending === "save") || undefined} onClick={() => run("save", true)}>
                             Save draft
                           </s-button>
                           <s-button
                             variant="tertiary"
-                            loading={busy && pending === "draft"}
+                            loading={(busy && pending === "draft") || undefined}
                             onClick={() => (dirty ? setConfirmRedraft(true) : run("draft"))}
                           >
                             Redraft
@@ -320,11 +348,11 @@ export function DisputeView({ data, base }: { data: DetailData; base: string }) 
               {editable ? (
                 <s-box paddingBlockStart="base">
                   {d.decision === "ACCEPT" ? (
-                    <s-button loading={busy && pending === "undecide"} onClick={() => run("undecide")}>
+                    <s-button loading={(busy && pending === "undecide") || undefined} onClick={() => run("undecide")}>
                       Undo accept
                     </s-button>
                   ) : (
-                    <s-button tone="critical" variant="tertiary" loading={busy && pending === "accept"} onClick={() => run("accept")}>
+                    <s-button tone="critical" variant="tertiary" loading={(busy && pending === "accept") || undefined} onClick={() => run("accept")}>
                       Accept the chargeback (don&apos;t fight)
                     </s-button>
                   )}

@@ -21,7 +21,7 @@ export default function Privacy() {
           max-width: 720px;
           margin: 0 auto;
           padding: 48px 24px 96px;
-          font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+          font-family: system-ui, -apple-system, Segoe UI, Roboto,
             Helvetica, Arial, sans-serif;
           color: #1a1a1a;
           line-height: 1.6;

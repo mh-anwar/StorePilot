@@ -7,11 +7,18 @@ import type { ActionResult } from "../lib/action-result";
 import { setPlan } from "../lib/billing/billing.server";
 import { PLANS, type PlanKey } from "../lib/billing/plans";
 import { packsUsed } from "../lib/disputes/records.server";
+import { dashboardStats, plansRecord } from "../lib/disputes/views.server";
 import { demoContext } from "../lib/demo/demo.server";
 
 export const loader = async () => {
   const ctx = await demoContext();
-  return { current: ctx.shop.plan as PlanKey, packsUsed: await packsUsed(ctx.shop.id), testMode: true, isDemo: true };
+  return {
+    current: ctx.shop.plan as PlanKey,
+    packsUsed: await packsUsed(ctx.shop.id),
+    testMode: true,
+    isDemo: true,
+    record: plansRecord(await dashboardStats(ctx)),
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResult> => {

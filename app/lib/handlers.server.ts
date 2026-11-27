@@ -6,17 +6,20 @@ import { planFor } from "./billing/plans";
 import type { StoreContext } from "./context.server";
 import { buildPack, decide, draftEvidence, saveEdits, sendToShopify } from "./disputes/pack.server";
 import { fieldsFromForm } from "./disputes/evidence-input";
-import { draftView, latestDraft } from "./disputes/records.server";
+import { canBuildPack, draftView, latestDraft } from "./disputes/records.server";
 import { syncDisputes } from "./disputes/sync.server";
 import { dashboardStats, disputeDetail, listDisputes, recentActivity, type InboxTab } from "./disputes/views.server";
 import { aiAvailable } from "./disputes/draft/ai.server";
-import { messageOf } from "./errors";
+import { messageOf, PlanLimitError } from "./errors";
+import { emailConfigured, sendEmail } from "./alerts/email.server";
 import { privacyRequests } from "./gdpr.server";
+import { shouldAskForReview } from "./onboarding";
 import { refreshShopDetails } from "./shop.server";
 
 import type { ActionResult } from "./action-result";
 export type { ActionResult };
 
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const TABS: InboxTab[] = ["open", "submitted", "closed", "all"];
 
 export async function inboxLoader(ctx: StoreContext, request: Request) {
@@ -34,6 +37,19 @@ export async function inboxLoader(ctx: StoreContext, request: Request) {
     stats,
     rows,
     activity,
+    askForReview: shouldAskForReview({
+      won: stats.won,
+      reviewRequestedAt: ctx.shop.reviewRequestedAt?.toISOString() ?? null,
+      isDemo: ctx.isDemo,
+    }),
+    setup: {
+      lastSyncedAt: ctx.shop.lastSyncedAt?.toISOString() ?? null,
+      supportEmail: ctx.shop.supportEmail,
+      refundPolicy: ctx.shop.refundPolicy,
+      shippingPolicy: ctx.shop.shippingPolicy,
+      plan: planFor(ctx.shop.plan).key,
+      setupDismissedAt: ctx.shop.setupDismissedAt?.toISOString() ?? null,
+    },
     isDemo: ctx.isDemo,
   };
 }
@@ -46,6 +62,17 @@ export async function inboxAction(ctx: StoreContext, request: Request): Promise<
       const r = await syncDisputes(ctx);
       return { ok: true, message: `Synced ${r.total} disputes (${r.created} new, ${r.updated} changed).` };
     }
+    if (intent === "review_requested") {
+      ctx.shop = await prisma.shop.update({ where: { id: ctx.shop.id }, data: { reviewRequestedAt: new Date() } });
+      return { ok: true, message: "" };
+    }
+    if (intent === "dismiss_setup" || intent === "show_setup") {
+      ctx.shop = await prisma.shop.update({
+        where: { id: ctx.shop.id },
+        data: { setupDismissedAt: intent === "dismiss_setup" ? new Date() : null },
+      });
+      return { ok: true, message: intent === "dismiss_setup" ? "Setup guide hidden." : "Setup guide restored." };
+    }
     return { ok: false, error: "Unknown action." };
   } catch (error) {
     return { ok: false, error: messageOf(error) };
@@ -55,8 +82,12 @@ export async function inboxAction(ctx: StoreContext, request: Request): Promise<
 export async function detailLoader(ctx: StoreContext, id: string) {
   const detail = await disputeDetail(ctx, id);
   const plan = planFor(ctx.shop.plan);
+  const allowance = await canBuildPack(ctx.shop);
   return {
     ...detail,
+    // True when building this dispute's first pack would hit the monthly limit.
+    outOfPacks: !detail.snapshot && !allowance.ok,
+    packsLimit: Number.isFinite(allowance.limit) ? allowance.limit : null,
     shopDomain: ctx.shop.domain,
     aiDrafts: plan.aiDrafts && aiAvailable(),
     planAllowsAi: plan.aiDrafts,
@@ -70,8 +101,13 @@ export async function detailAction(ctx: StoreContext, id: string, request: Reque
   try {
     switch (intent) {
       case "build": {
-        const { assessment } = await buildPack(ctx, id);
-        return { ok: true, message: `Evidence pack built: ${assessment.score}/100.` };
+        try {
+          const { assessment } = await buildPack(ctx, id);
+          return { ok: true, message: `Evidence pack built: ${assessment.score}/100.` };
+        } catch (error) {
+          if (error instanceof PlanLimitError) return { ok: false, error: error.message, code: "plan_limit" };
+          throw error;
+        }
       }
       case "draft": {
         const draft = await draftEvidence(ctx, id);
@@ -124,10 +160,16 @@ export async function settingsLoader(ctx: StoreContext) {
       shippingPolicy: ctx.shop.shippingPolicy ?? "",
       autoDraft: ctx.shop.autoDraft,
       minFightAmount: ctx.shop.minFightAmountCents / 100,
+      deadlineAlerts: ctx.shop.deadlineAlerts,
+      monthlySummary: ctx.shop.monthlySummary,
+      alertEmail: ctx.shop.alertEmail ?? "",
+      ownerEmail: ctx.shop.email ?? "",
       currencyCode: ctx.shop.currencyCode,
       lastSyncedAt: ctx.shop.lastSyncedAt?.toISOString() ?? null,
     },
     plan: planFor(ctx.shop.plan).key,
+    planHasAlerts: planFor(ctx.shop.plan).deadlineAlerts,
+    emailConfigured: emailConfigured(),
     aiConfigured: aiAvailable(),
     privacy: await privacyRequests(ctx.shop.domain),
     isDemo: ctx.isDemo,
@@ -138,6 +180,19 @@ export async function settingsAction(ctx: StoreContext, request: Request): Promi
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "save");
   try {
+    if (intent === "test_email") {
+      if (!emailConfigured()) return { ok: false, error: "Emails aren't switched on for this StorePilot server yet." };
+      const to = (ctx.shop.alertEmail ?? ctx.shop.email ?? "").trim();
+      if (!to) return { ok: false, error: "Add an address under Emails and save first." };
+      const sent = await sendEmail({
+        to,
+        subject: "StorePilot test email",
+        text: `This is a test from StorePilot for ${ctx.shop.name ?? ctx.shop.domain}. Deadline alerts and monthly summaries will arrive at this address.`,
+      });
+      return sent.sent
+        ? { ok: true, message: `Test email sent to ${to}. If it isn't in your inbox in a few minutes, check spam.` }
+        : { ok: false, error: `The test email couldn't be sent (${sent.reason}).` };
+    }
     if (intent === "reload_policies") {
       await prisma.shop.update({ where: { id: ctx.shop.id }, data: { refundPolicy: null, shippingPolicy: null } });
       const fresh = await prisma.shop.findUniqueOrThrow({ where: { id: ctx.shop.id } });
@@ -146,8 +201,12 @@ export async function settingsAction(ctx: StoreContext, request: Request): Promi
     }
     const min = Number(form.get("minFightAmount") ?? 0);
     const email = String(form.get("supportEmail") ?? "").trim();
-    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (email && !EMAIL_RE.test(email)) {
       return { ok: false, error: "Support email doesn't look like an email address." };
+    }
+    const alertEmail = String(form.get("alertEmail") ?? "").trim();
+    if (alertEmail && !EMAIL_RE.test(alertEmail)) {
+      return { ok: false, error: "Alert email doesn't look like an email address." };
     }
     if (!Number.isFinite(min) || min < 0 || min > 100000) {
       return { ok: false, error: "Minimum amount must be between 0 and 100,000." };
@@ -160,6 +219,14 @@ export async function settingsAction(ctx: StoreContext, request: Request): Promi
         shippingPolicy: String(form.get("shippingPolicy") ?? "").trim() || null,
         autoDraft: form.get("autoDraft") === "on" || form.get("autoDraft") === "true",
         minFightAmountCents: Math.round(min * 100),
+        // Older clients don't send these fields; leave the stored values alone then.
+        ...(form.has("deadlineAlerts")
+          ? { deadlineAlerts: form.get("deadlineAlerts") === "on" || form.get("deadlineAlerts") === "true" }
+          : {}),
+        ...(form.has("alertEmail") ? { alertEmail: alertEmail || null } : {}),
+        ...(form.has("monthlySummary")
+          ? { monthlySummary: form.get("monthlySummary") === "on" || form.get("monthlySummary") === "true" }
+          : {}),
       },
     });
     return { ok: true, message: "Settings saved." };

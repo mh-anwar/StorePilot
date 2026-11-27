@@ -222,7 +222,8 @@ const DISPUTES: DisputeSpec[] = [
   { n: 907, order: 43, type: "INQUIRY", status: "NEEDS_RESPONSE", reason: "UNRECOGNIZED", code: "4863", opened: -1, due: 6 },
   { n: 908, order: 46, status: "NEEDS_RESPONSE", reason: "DUPLICATE", code: "12.6.1", amount: "640.00", opened: -1, due: 1 },
   { n: 880, order: 22, status: "WON", reason: "PRODUCT_NOT_RECEIVED", code: "13.1", opened: -70, due: null, sent: -62, finalized: -18 },
-  { n: 876, order: 19, status: "LOST", reason: "FRAUDULENT", code: "4837", opened: -80, due: null, sent: -73, finalized: -25 },
+  // Lost before StorePilot was installed: nobody answered it before the deadline.
+  { n: 876, order: 19, status: "LOST", reason: "FRAUDULENT", code: "4837", opened: -80, due: -59, finalized: -58 },
 ];
 
 export function demoOrders(now = new Date()): Record<string, RawOrder> {

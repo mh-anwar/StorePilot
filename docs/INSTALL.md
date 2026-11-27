@@ -114,6 +114,24 @@ distributed; Shopify doesn't allow Billing API charges from custom-distribution 
 | `DEMO_MODE` | no | `off` disables `/demo` |
 | `DEMO_AI` | no | `on` lets the public demo use your Anthropic key (off by default) |
 | `PRIVACY_CONTACT_EMAIL` | no | Shown on `/privacy` |
+| `RESEND_API_KEY` | no | Sends deadline alerts (Growth and Pro) and monthly summaries through [Resend](https://resend.com). Without it alerts are skipped |
+| `ALERTS_FROM_EMAIL` | with Resend | Sender address on a domain verified in Resend, e.g. `StorePilot <alerts@yourdomain.com>` |
+| `DEADLINE_ALERTS` | no | `off` stops the built-in hourly alert run |
+| `CRON_SECRET` | no | Enables `GET/POST /cron/deadlines` (with `Authorization: Bearer <secret>`) to trigger an alert run from an outside scheduler |
+
+### Deadline alerts
+
+Growth and Pro shops get an email when a dispute arrives and again when it has
+7, 3 and 1 day left, one digest per shop per run. The server runs this every hour
+by itself; each dispute is emailed at most once per stage, so extra runs through
+`/cron/deadlines` are harmless. Accepted, submitted and expired disputes are left
+out. Merchants can turn alerts off or change the address in Settings. Emails go to
+the store's email unless they set another one.
+
+The same hourly run sends a **monthly summary** (every plan) early each month:
+disputes opened, responses sent, won and lost, money recovered, and anything
+still open. Quiet months are skipped and each store gets at most one per month.
+Merchants can turn it off in Settings.
 
 ## Other ways to run it
 

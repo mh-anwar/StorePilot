@@ -11,6 +11,7 @@ export interface Plan {
   packsPerMonth: number; // Infinity = unlimited
   aiDrafts: boolean;
   autoDraft: boolean; // build + draft a pack as soon as a dispute arrives
+  deadlineAlerts: boolean; // email when a dispute arrives and as its deadline nears
   features: string[];
 }
 
@@ -23,6 +24,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     packsPerMonth: 3,
     aiDrafts: false,
     autoDraft: false,
+    deadlineAlerts: false,
     features: ["3 evidence packs a month", "Fight-or-accept recommendation", "Template drafts"],
   },
   growth: {
@@ -33,7 +35,8 @@ export const PLANS: Record<PlanKey, Plan> = {
     packsPerMonth: 30,
     aiDrafts: true,
     autoDraft: false,
-    features: ["30 evidence packs a month", "AI-written rebuttals (Claude Haiku)", "Deadline alerts on the dashboard"],
+    deadlineAlerts: true,
+    features: ["30 evidence packs a month", "AI-written rebuttals (Claude Haiku)", "Email alerts 7, 3 and 1 day before deadlines"],
   },
   pro: {
     key: "pro",
@@ -43,10 +46,12 @@ export const PLANS: Record<PlanKey, Plan> = {
     packsPerMonth: Number.POSITIVE_INFINITY,
     aiDrafts: true,
     autoDraft: true,
+    deadlineAlerts: true,
     features: [
       "Unlimited evidence packs",
       "AI-written rebuttals (Claude Sonnet)",
       "Packs drafted the moment a dispute arrives",
+      "Email alerts 7, 3 and 1 day before deadlines",
     ],
   },
 };

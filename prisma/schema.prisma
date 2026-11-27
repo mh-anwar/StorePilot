@@ -41,6 +41,10 @@ model Shop {
   installedAt   DateTime  @default(now())
   uninstalledAt DateTime?
   lastSyncedAt  DateTime?
+  // When the merchant hid the first-run setup guide on the home page.
+  setupDismissedAt DateTime?
+  // Last time we asked App Bridge to show the App Store review modal.
+  reviewRequestedAt DateTime?
 
   // Merchant settings
   refundPolicy        String?
@@ -48,6 +52,12 @@ model Shop {
   supportEmail        String?
   autoDraft           Boolean @default(true)
   minFightAmountCents Int     @default(2000)
+  // Deadline alert emails (Growth and Pro). alertEmail falls back to the shop owner's email.
+  deadlineAlerts      Boolean @default(true)
+  alertEmail          String?
+  // Monthly summary email (all plans). summaryMonth = last "YYYY-MM" summarized.
+  monthlySummary      Boolean @default(true)
+  summaryMonth        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -86,6 +96,8 @@ model Dispute {
   assessment      String? // JSON Assessment
   decision        String? // merchant's call: FIGHT | ACCEPT
   redactedAt      DateTime?
+  // Smallest "days left" threshold we've already emailed about (see lib/alerts).
+  alertStage      Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

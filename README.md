@@ -27,7 +27,12 @@ usually take 20-25% of what they recover. StorePilot is a flat monthly price ins
   plans Claude writes it; otherwise a template fills in the same fields.
 - You can edit everything and save it back to Shopify. Submitting can only happen once,
   so the app asks you to confirm first.
-- Outcomes come back by webhook, and the dashboard shows win rate and money recovered.
+- Outcomes come back by webhook, and the dashboard shows win rate, money recovered,
+  and money lost to disputes nobody answered.
+- On paid plans, an email goes out when a dispute arrives and again 7, 3 and 1 day
+  before its deadline. Every plan gets a short monthly summary email.
+- New installs get a short setup checklist on the home page (import, support email,
+  policies, plan).
 
 ![Dispute detail](docs/screenshots/dispute.png)
 
@@ -58,8 +63,8 @@ at your server, then install it on your store. You don't need the Shopify CLI.
 | Plan | Price | |
 |---|---|---|
 | Free | $0 | 3 evidence packs a month, template drafts |
-| Growth | $29/mo | 30 packs a month, Claude drafts |
-| Pro | $79/mo | Unlimited, drafts written as soon as a dispute arrives |
+| Growth | $29/mo | 30 packs a month, Claude drafts, deadline alert emails |
+| Pro | $79/mo | Unlimited, drafts written as soon as a dispute arrives, deadline alert emails |
 
 Billed through Shopify with a 7-day trial.
 

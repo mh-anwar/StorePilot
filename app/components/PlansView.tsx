@@ -1,13 +1,29 @@
 import { useFetcher } from "react-router";
 import type { ActionResult } from "../lib/action-result";
 import { PLANS, type PlanKey } from "../lib/billing/plans";
+import type { PlansRecord } from "../lib/disputes/views.server";
 import { Flash } from "./Flash";
+import { formatMoney } from "./format";
 
 export interface PlansData {
   current: PlanKey;
   packsUsed: number;
   testMode: boolean;
   isDemo: boolean;
+  record?: PlansRecord;
+}
+
+/** One line in the store's own numbers on why a plan pays for itself, or null. */
+export function recordLine(r: PlansRecord | undefined): string | null {
+  if (!r) return null;
+  const money = (c: number) => formatMoney(c, r.currencyCode);
+  const parts: string[] = [];
+  if (r.open) parts.push(`${money(r.atStakeCents)} is at stake in ${r.open} open dispute${r.open === 1 ? "" : "s"}`);
+  if (r.unanswered) parts.push(`${money(r.unansweredCents)} was lost to disputes nobody answered`);
+  if (r.won) parts.push(`you have won back ${money(r.recoveredCents)} in disputes`);
+  if (!parts.length) return null;
+  const line = parts.join("; ");
+  return `${line.charAt(0).toUpperCase()}${line.slice(1)}.`;
 }
 
 const ORDER: PlanKey[] = ["free", "growth", "pro"];
@@ -28,6 +44,11 @@ export function PlansView({ data, base }: { data: PlansData; base: string }) {
           A flat monthly price. You keep 100% of every dispute you win; StorePilot never takes a cut of recovered
           funds.
         </s-paragraph>
+        {recordLine(data.record) ? (
+          <s-banner tone="info" heading="Your store so far">
+            {recordLine(data.record)}
+          </s-banner>
+        ) : null}
         {data.testMode && !data.isDemo ? (
           <s-banner tone="info">Billing is in test mode: approving a plan won&apos;t charge the store.</s-banner>
         ) : null}
@@ -38,7 +59,7 @@ export function PlansView({ data, base }: { data: PlansData; base: string }) {
             return (
               <s-section key={key} heading={plan.label}>
                 <s-stack gap="base">
-                  <s-heading>{plan.priceUsd === 0 ? "Free" : `$${plan.priceUsd} / month`}</s-heading>
+                  <s-heading>{plan.priceUsd === 0 ? "$0" :`$${plan.priceUsd} / month`}</s-heading>
                   {plan.priceUsd ? <s-text color="subdued">7-day free trial</s-text> : null}
                   <s-unordered-list>
                     {plan.features.map((f) => (
@@ -50,7 +71,7 @@ export function PlansView({ data, base }: { data: PlansData; base: string }) {
                   ) : (
                     <s-button
                       variant={key === "free" ? "secondary" : "primary"}
-                      loading={busy && pendingPlan === key}
+                      loading={(busy && pendingPlan === key) || undefined}
                       onClick={() => fetcher.submit({ plan: key }, { method: "post" })}
                     >
                       {key === "free" ? "Downgrade to Free" : `Choose ${plan.label}`}

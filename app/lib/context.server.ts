@@ -28,6 +28,7 @@ export type ActivityKind =
   | "outcome"
   | "plan_changed"
   | "gdpr"
+  | "alerted"
   | "error";
 
 export async function logActivity(
