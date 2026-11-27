@@ -1,13 +1,15 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 import { guideBySlug, guideJsonLd, GUIDES } from "../lib/guides";
+import { publicOrigin, socialImage } from "../lib/seo";
 import styles from "./_index/styles.module.css";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const guide = guideBySlug(params.slug);
   if (!guide) throw new Response("Not found", { status: 404 });
-  const origin = (process.env.SHOPIFY_APP_URL || new URL(request.url).origin).replace(/\/$/, "");
+  const origin = publicOrigin(request);
   return {
+    origin,
     guide,
     jsonLd: guideJsonLd(guide, `${origin}/guides/${guide.slug}`),
     others: GUIDES.filter((g) => g.slug !== guide.slug).map((g) => ({ slug: g.slug, title: g.title })),
@@ -22,6 +24,7 @@ export const meta: MetaFunction<typeof loader> = ({ data }) =>
         { property: "og:title", content: data.guide.title },
         { property: "og:description", content: data.guide.description },
         { property: "og:type", content: "article" },
+        ...socialImage(data.origin),
       ]
     : [{ title: "Guide not found | StorePilot" }];
 

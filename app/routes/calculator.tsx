@@ -1,17 +1,21 @@
-import type { MetaFunction } from "react-router";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useState } from "react";
 import { calculate, CALCULATOR_DEFAULTS, type CalculatorInput } from "../lib/calculator";
+import { publicOrigin, socialImage } from "../lib/seo";
 import styles from "./_index/styles.module.css";
 
 const TITLE = "Chargeback service fee calculator: keep 100% vs pay 25% | StorePilot";
 const DESCRIPTION =
   "See what percentage-fee chargeback services cost your Shopify store in a year, compared with a flat monthly price where you keep everything you win.";
 
-export const meta: MetaFunction = () => [
+export const loader = ({ request }: LoaderFunctionArgs) => ({ origin: publicOrigin(request) });
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => [
   { title: TITLE },
   { name: "description", content: DESCRIPTION },
   { property: "og:title", content: TITLE },
   { property: "og:description", content: DESCRIPTION },
+  ...socialImage(data?.origin),
 ];
 
 const dollars = (n: number) =>

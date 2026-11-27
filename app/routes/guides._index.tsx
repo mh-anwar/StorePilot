@@ -1,16 +1,20 @@
-import type { MetaFunction } from "react-router";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { GUIDES } from "../lib/guides";
+import { publicOrigin, socialImage } from "../lib/seo";
 import styles from "./_index/styles.module.css";
 
 const TITLE = "Shopify chargeback guides: what evidence wins each dispute | StorePilot";
 const DESCRIPTION =
   "Plain guides to answering Shopify Payments chargebacks by reason: not received, fraudulent, not as described, credit not processed, subscriptions and duplicates.";
 
-export const meta: MetaFunction = () => [
+export const loader = ({ request }: LoaderFunctionArgs) => ({ origin: publicOrigin(request) });
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => [
   { title: TITLE },
   { name: "description", content: DESCRIPTION },
   { property: "og:title", content: TITLE },
   { property: "og:description", content: DESCRIPTION },
+  ...socialImage(data?.origin),
 ];
 
 export default function Guides() {

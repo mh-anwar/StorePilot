@@ -168,3 +168,5 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
 - **Dispute page links to its guide** ("How these disputes are judged") next to
   the evidence checklist.
 - **"Send a test email"** in Settings, so merchants can confirm alerts reach them.
+- **Social previews** on the guides and calculator: absolute `og:image` and a
+  large Twitter card (`app/lib/seo.ts`), so shared links show an image.
