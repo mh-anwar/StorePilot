@@ -139,6 +139,20 @@ export async function dashboardStats(ctx: StoreContext): Promise<DashboardStats>
   };
 }
 
+/** The store's own numbers, shown on the Plans page as the reason to pick a plan. */
+export function plansRecord(stats: DashboardStats) {
+  return {
+    recoveredCents: stats.recoveredCents,
+    won: stats.won,
+    unanswered: stats.unanswered,
+    unansweredCents: stats.unansweredCents,
+    atStakeCents: stats.atStakeCents,
+    open: stats.open,
+    currencyCode: stats.currencyCode,
+  };
+}
+export type PlansRecord = ReturnType<typeof plansRecord>;
+
 export async function disputeDetail(ctx: StoreContext, disputeId: string) {
   const row = await prisma.dispute.findFirst({
     where: { id: disputeId, shopId: ctx.shop.id },

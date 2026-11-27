@@ -7,17 +7,20 @@ import { billingTestMode, planFromSubscriptions, setPlan } from "../lib/billing/
 import { PAID_PLANS, PLAN_GROWTH, PLAN_PRO } from "../lib/billing/plan-names";
 import type { PlanKey } from "../lib/billing/plans";
 import { packsUsed } from "../lib/disputes/records.server";
+import { dashboardStats, plansRecord } from "../lib/disputes/views.server";
 import type { ActionResult } from "../lib/action-result";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { ctx, billing } = await adminContext(request);
   const { appSubscriptions } = await billing.check({ plans: [...PAID_PLANS], isTest: billingTestMode() });
   const shop = await setPlan(ctx.shop, planFromSubscriptions(appSubscriptions), ctx.actor);
+  ctx.shop = shop;
   return {
     current: shop.plan as PlanKey,
     packsUsed: await packsUsed(shop.id),
     testMode: billingTestMode(),
     isDemo: false,
+    record: plansRecord(await dashboardStats(ctx)),
   };
 };
 

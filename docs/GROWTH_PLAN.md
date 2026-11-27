@@ -158,3 +158,5 @@ on a paid plan, 10+ reviews averaging 4.5 or higher.
   the demo by the hydration failure above; the embedded app was likely affected.
   A unit test keeps boolean props on `s-*` elements as `cond || undefined`.
 - README and landing screenshots refreshed from a passing `pnpm walkthrough`.
+- **Plans page** shows the store's own numbers above the prices: money at stake,
+  money lost to unanswered disputes, and money won back.
