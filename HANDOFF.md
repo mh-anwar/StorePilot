@@ -1,7 +1,7 @@
 # Handoff: growth pass (branch `growth/2026-11-26`, draft PR #5)
 
 Live work queue. Update after every step so the next agent can pick up.
-Stopped 2026-11-26 ~19:36 EST at the planned hard stop. Everything below is committed and pushed.
+Stopped 2026-11-26 ~19:48 EST at the hard stop. Everything below is committed and pushed.
 
 ## Done
 - First-run setup guide on the home page (`app/components/SetupGuide.tsx`, `app/lib/onboarding.ts`),
@@ -45,4 +45,4 @@ Stopped 2026-11-26 ~19:36 EST at the planned hard stop. Everything below is comm
 ## Checks
 `pnpm typecheck && pnpm test && pnpm test:integration && pnpm test:e2e`
 Browser: `pnpm build && PORT=3457 pnpm start`, then `BASE_URL=http://127.0.0.1:3457 pnpm walkthrough`.
-Last run: typecheck clean; unit 101, integration 55, e2e 12 pass; walkthrough 17/17.
+Last run (19:47): typecheck clean; unit 105, integration 57, e2e 12 pass; walkthrough 18/18.
