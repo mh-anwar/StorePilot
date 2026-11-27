@@ -137,6 +137,12 @@ async function main() {
     await page.goto(`${BASE}/guides/product-not-received`);
     await page.waitForLoadState("networkidle");
     check((await page.getByRole("heading", { level: 1 }).textContent())?.includes("not received"), "guide page renders");
+    await page.goto(`${BASE}/calculator`);
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel("Disputes a month").fill("10");
+    await page.getByLabel("Average disputed amount ($)").fill("100");
+    await page.getByLabel("Share of disputes won (%)").fill("50");
+    check(await page.getByText("You'd keep $1,152 more a year").isVisible(), "fee calculator recomputes as you type");
     const sitemap = await (await page.request.get(`${BASE}/sitemap.xml`)).text();
     check(sitemap.includes("/guides/fraudulent"), "sitemap lists the guides");
     check(pageErrors.length === 0, `no page errors on public pages${pageErrors.length ? `: ${pageErrors[0]}` : ""}`);

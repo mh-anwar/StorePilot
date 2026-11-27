@@ -123,7 +123,12 @@ export default function Index() {
           </div>
           <div className={styles.card}>
             <h3>Services take a quarter</h3>
-            <p>Done-for-you chargeback services keep 20-25% of what they recover. StorePilot is a flat price.</p>
+            <p>
+              Done-for-you chargeback services keep 20-25% of what they recover. StorePilot is a flat price.{" "}
+              <a className={styles.link} href="/calculator">
+                See the difference for your store
+              </a>
+            </p>
           </div>
         </div>
       </section>
@@ -215,6 +220,9 @@ export default function Index() {
         </a>
         <a className={styles.link} href="/guides">
           Chargeback guides
+        </a>
+        <a className={styles.link} href="/calculator">
+          Fee calculator
         </a>
         <a className={styles.link} href="/privacy">
           Privacy

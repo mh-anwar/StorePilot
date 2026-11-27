@@ -4,7 +4,7 @@ import { GUIDES } from "../lib/guides";
 // Public pages for search engines. The embedded app (/app) and the demo's
 // write actions are left out on purpose.
 export function sitemapXml(origin: string): string {
-  const paths = ["/", "/demo", "/guides", ...GUIDES.map((g) => `/guides/${g.slug}`), "/privacy"];
+  const paths = ["/", "/demo", "/calculator", "/guides", ...GUIDES.map((g) => `/guides/${g.slug}`), "/privacy"];
   const urls = paths.map((p) => `  <url><loc>${origin}${p}</loc></url>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
